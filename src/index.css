@@ -1,0 +1,124 @@
+:root {
+  --ink: #1a1f27;
+  --ink-dim: #5b6472;
+  --line: #e2e5ea;
+  --surface: #ffffff;
+  --ground: #f4f5f7;
+  --accent: #3454d1;
+  --accent-ink: #ffffff;
+  --danger: #b3432f;
+  --danger-soft: #f9e7e3;
+  font-family: -apple-system, "Segoe UI", system-ui, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 40px;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(20, 24, 30, 0.06);
+}
+
+.card h1 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+
+.card p.subtitle {
+  color: var(--ink-dim);
+  font-size: 14px;
+  margin: 0 0 28px;
+}
+
+.login-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.error-text {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--danger);
+}
+
+.unauthorized-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.unauthorized-mail {
+  display: inline-block;
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.dashboard-email {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 13px;
+  background: var(--ground);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 0 0 16px;
+  word-break: break-all;
+}
+
+.role-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 100px;
+  margin-bottom: 24px;
+}
+
+.role-badge.yes {
+  background: #dcf0ec;
+  color: #1f7a6c;
+}
+
+.role-badge.no {
+  background: var(--ground);
+  color: var(--ink-dim);
+}
+
+button.logout-btn {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+button.logout-btn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.loading-text {
+  color: var(--ink-dim);
+  font-size: 14px;
+}
