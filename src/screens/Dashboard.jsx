@@ -1,20 +1,15 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 
-export default function Dashboard({ user, onLoggedOut }) {
+export default function Dashboard({ user }) {
   const [isAdmin, setIsAdmin] = useState(null);
 
   useEffect(() => {
     api.pingAdmin().then(({ ok }) => setIsAdmin(ok));
   }, []);
 
-  const handleLogout = async () => {
-    await api.logout();
-    onLoggedOut();
-  };
-
   return (
-    <div className="card">
+    <div>
       <h1>Bienvenido</h1>
       <p className="subtitle">Sesión iniciada correctamente</p>
       <p className="dashboard-email">{user?.email}</p>
@@ -25,9 +20,6 @@ export default function Dashboard({ user, onLoggedOut }) {
         {isAdmin === true && <span className="role-badge yes">Sos Admin</span>}
         {isAdmin === false && <span className="role-badge no">No sos Admin</span>}
       </div>
-      <button className="logout-btn" onClick={handleLogout}>
-        Cerrar sesión
-      </button>
     </div>
   );
 }
