@@ -1,54 +1,75 @@
 import { useEffect, useState } from "react";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { api } from "./api";
 import Dashboard from "./screens/Dashboard";
 import Login from "./screens/Login";
 import Unauthorized from "./screens/Unauthorized";
+import AppShell from "./shared/layout/AppShell";
 
-// "checking" | "login" | "unauthorized" | "authorized"
+// authed: null = verificando sesión, false = sin sesión, true = con sesión
 export default function App() {
-  const [screen, setScreen] = useState("checking");
+  const [authed, setAuthed] = useState(null);
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     api.fetchCsrfCookie().then(() => {
       api.me().then(({ ok, data }) => {
         if (ok) {
           setUser(data);
-          setScreen("authorized");
+          setAuthed(true);
         } else {
-          setScreen("login");
+          setAuthed(false);
         }
       });
     });
   }, []);
 
-  if (screen === "checking") {
+  const handleLogout = async () => {
+    await api.logout();
+    setUser(null);
+    setAuthed(false);
+    navigate("/login");
+  };
+
+  if (authed === null) {
     return <p className="loading-text">Cargando…</p>;
   }
 
-  if (screen === "authorized") {
-    return (
-      <Dashboard
-        user={user}
-        onLoggedOut={() => {
-          setUser(null);
-          setScreen("login");
-        }}
-      />
-    );
-  }
-
-  if (screen === "unauthorized") {
-    return <Unauthorized onBack={() => setScreen("login")} />;
-  }
-
   return (
-    <Login
-      onAuthorized={(loggedUser) => {
-        setUser(loggedUser);
-        setScreen("authorized");
-      }}
-      onUnauthorized={() => setScreen("unauthorized")}
-    />
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          authed ? (
+            <Navigate to="/" replace />
+          ) : (
+            <Login
+              onAuthorized={(loggedUser) => {
+                setUser(loggedUser);
+                setAuthed(true);
+                navigate("/");
+              }}
+              onUnauthorized={() => navigate("/unauthorized")}
+            />
+          )
+        }
+      />
+      <Route
+        path="/unauthorized"
+        element={<Unauthorized onBack={() => navigate("/login")} />}
+      />
+      <Route
+        element={
+          authed ? (
+            <AppShell user={user} onLogout={handleLogout} />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      >
+        <Route path="/" element={<Dashboard user={user} />} />
+      </Route>
+    </Routes>
   );
 }
