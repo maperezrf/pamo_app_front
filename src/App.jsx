@@ -10,7 +10,14 @@ import AppShell from "./shared/layout/AppShell";
 export default function App() {
   const [authed, setAuthed] = useState(null);
   const [user, setUser] = useState(null);
+  const [menu, setMenu] = useState([]);
   const navigate = useNavigate();
+
+  const loadMenu = () => {
+    api.menu().then(({ ok, data }) => {
+      if (ok) setMenu(data);
+    });
+  };
 
   useEffect(() => {
     api.fetchCsrfCookie().then(() => {
@@ -18,6 +25,7 @@ export default function App() {
         if (ok) {
           setUser(data);
           setAuthed(true);
+          loadMenu();
         } else {
           setAuthed(false);
         }
@@ -28,6 +36,7 @@ export default function App() {
   const handleLogout = async () => {
     await api.logout();
     setUser(null);
+    setMenu([]);
     setAuthed(false);
     navigate("/login");
   };
@@ -48,6 +57,7 @@ export default function App() {
               onAuthorized={(loggedUser) => {
                 setUser(loggedUser);
                 setAuthed(true);
+                loadMenu();
                 navigate("/");
               }}
               onUnauthorized={() => navigate("/unauthorized")}
@@ -62,7 +72,7 @@ export default function App() {
       <Route
         element={
           authed ? (
-            <AppShell user={user} onLogout={handleLogout} />
+            <AppShell user={user} menu={menu} onLogout={handleLogout} />
           ) : (
             <Navigate to="/login" replace />
           )

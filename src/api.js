@@ -18,5 +18,6 @@ export const api = {
     request("/api/auth/google/", { method: "POST", body: { credential } }),
   me: () => request("/api/auth/me/"),
   logout: () => request("/api/auth/logout/", { method: "POST" }),
+  menu: () => request("/api/auth/menu/"),
   pingAdmin: () => request("/api/auth/ping-admin/"),
 };

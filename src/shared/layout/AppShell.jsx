@@ -4,12 +4,12 @@ import Footer from "./Footer";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 
-export default function AppShell({ user, onLogout }) {
+export default function AppShell({ user, menu, onLogout }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
     <div className="app-shell">
-      <Sidebar mobileOpen={mobileNavOpen} />
+      <Sidebar items={menu} mobileOpen={mobileNavOpen} />
       {mobileNavOpen && (
         <button
           type="button"
