@@ -20,4 +20,5 @@ export const api = {
   logout: () => request("/api/auth/logout/", { method: "POST" }),
   menu: () => request("/api/auth/menu/"),
   pingAdmin: () => request("/api/auth/ping-admin/"),
+  listarPrototipos: () => request("/api/tracking/prototipos/admin/"),
 };

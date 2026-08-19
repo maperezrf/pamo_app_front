@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { api } from "./api";
 import Dashboard from "./screens/Dashboard";
 import Login from "./screens/Login";
+import Prototipos from "./screens/Prototipos";
 import Unauthorized from "./screens/Unauthorized";
 import AppShell from "./shared/layout/AppShell";
 
@@ -79,6 +80,7 @@ export default function App() {
         }
       >
         <Route path="/" element={<Dashboard user={user} />} />
+        <Route path="/prototipos" element={<Prototipos />} />
       </Route>
     </Routes>
   );
