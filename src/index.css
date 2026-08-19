@@ -353,3 +353,158 @@ button.logout-btn:hover {
   color: var(--ink-dim);
   font-size: 14px;
 }
+
+.data-table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.data-table-toolbar {
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.data-table-filter {
+  width: 100%;
+  max-width: 280px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--ground);
+}
+
+.data-table-filter:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.data-table-scroll {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 10px 16px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line);
+}
+
+.data-table th {
+  color: var(--ink-dim);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  user-select: none;
+}
+
+.data-table th.sortable {
+  cursor: pointer;
+}
+
+.data-table th.sortable:hover {
+  color: var(--ink);
+}
+
+.data-table tbody tr:hover {
+  background: var(--ground);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table-empty {
+  text-align: center;
+  color: var(--ink-dim);
+  padding: 24px 16px;
+}
+
+.data-table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.data-table-pagination-info {
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+.data-table-pagination-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.data-table-pagination-actions button {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.data-table-pagination-actions button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.data-table-pagination-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.estado-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 100px;
+}
+
+.estado-badge.activo {
+  background: #dcf0ec;
+  color: #1f7a6c;
+}
+
+.estado-badge.archivado {
+  background: var(--ground);
+  color: var(--ink-dim);
+}
+
+.merge-flags {
+  display: flex;
+  gap: 6px;
+}
+
+.merge-flags .flag-on,
+.merge-flags .flag-off {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 100px;
+}
+
+.merge-flags .flag-on {
+  background: #dcf0ec;
+  color: #1f7a6c;
+}
+
+.merge-flags .flag-off {
+  background: var(--ground);
+  color: var(--ink-dim);
+}
