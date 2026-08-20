@@ -8,8 +8,16 @@ de `Pamo_app_back` (backend Django) y del repo del servidor MCP
 
 ## Consulta obligatoria de lineamientos (MCP `governance-pamo`)
 
-Antes de escribir o modificar código en este repo, consultar el servidor
-MCP `governance-pamo` en este orden:
+**Regla no negociable:** ante cualquier pedido de código — nuevo o
+modificación, sin importar lo simple o urgente que parezca — lo primero
+que se hace, antes de leer el código existente, antes de proponer un plan
+y antes de escribir una sola línea, es consultar el servidor MCP
+`governance-pamo`. No resolver el pedido por cuenta propia usando solo el
+conocimiento general del modelo sin haber pasado por este paso primero. Si
+todavía no se consultó el MCP en la conversación actual, hacerlo ahora
+antes de continuar.
+
+Consultar el servidor MCP `governance-pamo` en este orden:
 
 1. `obtener_mapa_documentacion` — índice de toda la documentación.
 2. `obtener_lineamientos_generales` — siempre.
