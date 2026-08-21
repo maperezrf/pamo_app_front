@@ -6,6 +6,8 @@ import Login from "./screens/Login";
 import Prototipos from "./screens/Prototipos";
 import Unauthorized from "./screens/Unauthorized";
 import AppShell from "./shared/layout/AppShell";
+import RemittancesOperationsScreen from "./areas/remittances/screens/RemittancesOperationsScreen";
+import RemittanceAccountingScreen from "./areas/remittances/screens/RemittanceAccountingScreen";
 
 // authed: null = verificando sesión, false = sin sesión, true = con sesión
 export default function App() {
@@ -81,6 +83,8 @@ export default function App() {
       >
         <Route path="/" element={<Dashboard user={user} />} />
         <Route path="/prototipos" element={<Prototipos />} />
+        <Route path="/remisiones" element={<RemittancesOperationsScreen />} />
+        <Route path="/contabilidad/remisiones" element={<RemittanceAccountingScreen />} />
       </Route>
     </Routes>
   );
