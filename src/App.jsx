@@ -8,6 +8,7 @@ import Unauthorized from "./screens/Unauthorized";
 import AppShell from "./shared/layout/AppShell";
 
 const RemittancesOperationsScreen = lazy(() => import("./areas/remittances/screens/RemittancesOperationsScreen"));
+const RemittanceAccountingScreen = lazy(() => import("./areas/remittances/screens/RemittanceAccountingScreen"));
 const RecipientRemittanceScreen = lazy(() => import("./areas/remittances/screens/RecipientRemittanceScreen"));
 
 // authed: null = verificando sesión, false = sin sesión, true = con sesión
@@ -99,7 +100,9 @@ export default function App() {
         <Route path="/" element={<Dashboard user={user} />} />
         <Route path="/prototipos" element={<Prototipos />} />
         <Route path="/prototipos/remisiones" element={<Suspense fallback={<div className="card">Abriendo Remisiones…</div>}><RemittancesOperationsScreen /></Suspense>} />
+        <Route path="/prototipos/facturacion-remisiones" element={<Suspense fallback={<div className="card">Abriendo Facturación de remisiones…</div>}><RemittanceAccountingScreen /></Suspense>} />
         <Route path="/remisiones" element={<Navigate to="/prototipos/remisiones" replace />} />
+        <Route path="/contabilidad/remisiones" element={<Navigate to="/prototipos/facturacion-remisiones" replace />} />
       </Route>
     </Routes>
   );
