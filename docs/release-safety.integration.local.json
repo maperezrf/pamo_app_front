@@ -9,7 +9,7 @@
   ],
   "url_checks": [
     {
-      "url": "http://127.0.0.1:5176/",
+      "url": "http://localhost:5176/",
       "allowed_status": [200]
     }
   ]
