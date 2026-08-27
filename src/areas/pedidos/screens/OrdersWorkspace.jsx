@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { authenticatedDocumentUrl, ordersApi } from "../api";
+import WhatsAppCloudPanel from "../../communications/WhatsAppCloudPanel";
 
 
 const stateLabels = {
@@ -608,10 +609,10 @@ export default function OrdersWorkspace({ user }) {
           <button
             type="button"
             className="primary-action"
-            disabled={!selected.length || saving === "whatsapp"}
+            disabled={!selected.length || stale || saving === "whatsapp"}
             onClick={prepareMessages}
           >
-            {saving === "whatsapp" ? "Preparando…" : "Preparar WhatsApp Web"}
+            {saving === "whatsapp" ? "Preparando…" : "Preparar WhatsApp Web (manual)"}
           </button>
           <div className="saved-filter-tools">
             <select defaultValue="" onChange={(event) => applySavedFilter(event.target.value)}>
@@ -626,6 +627,13 @@ export default function OrdersWorkspace({ user }) {
             <button type="button" className="secondary-action" onClick={saveCurrentFilter}>Guardar vista</button>
           </div>
         </div>
+
+        <WhatsAppCloudPanel
+          selected={selected}
+          stale={stale}
+          onError={setError}
+          onNotice={setNotice}
+        />
 
         {followups.length > 0 && (
           <div className="prepared-messages">
