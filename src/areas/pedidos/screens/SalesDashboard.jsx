@@ -7,6 +7,7 @@ const cards = [
   ["total", "Pedidos", ""],
   ["without_guide", "Sin guía", "missing"],
   ["guide_without_tracking", "Guía sin trazabilidad", "present_without_tracking"],
+  ["without_pdf", "PDF pendiente", "pdf_missing"],
   ["split", "Multibodega", ""],
   ["in_transit", "En tránsito", ""],
   ["delivered", "Entregados", ""],
@@ -29,9 +30,9 @@ export default function SalesDashboard() {
         <div>
           <p className="eyebrow">VENTAS</p>
           <h1>Dashboard de pedidos</h1>
-          <p>Lectura local controlada de pedidos, despachos, guías y seguimiento.</p>
+          <p>Lectura Beta de pedidos, despachos, guías y seguimiento.</p>
         </div>
-        <span className="local-safety-pill">externalWrites: 0</span>
+        <span className="local-safety-pill">Proveedores externos · solo lectura</span>
       </header>
       {error && <div className="orders-alert error">{error}</div>}
       {!overview ? (
@@ -51,7 +52,7 @@ export default function SalesDashboard() {
             ))}
           </div>
           <article className="sales-total-card">
-            <span>Ventas en la muestra local</span>
+            <span>Ventas en el rango sincronizado</span>
             <strong>
               {new Intl.NumberFormat("es-CO", {
                 style: "currency",
@@ -59,11 +60,10 @@ export default function SalesDashboard() {
                 maximumFractionDigits: 0,
               }).format(Number(overview.sales_total || 0))}
             </strong>
-            <small>Datos sanitizados; no representan el total de Producción.</small>
+            <small>Datos de la copia operativa de Beta; no modifica los canales externos.</small>
           </article>
         </>
       )}
     </section>
   );
 }
-

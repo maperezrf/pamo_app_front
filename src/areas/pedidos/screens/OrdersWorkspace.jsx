@@ -88,7 +88,7 @@ function readCache(user) {
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey(user)) || "null");
     if (!cached || Date.now() - cached.savedAt > 15 * 60 * 1000) return null;
-    return cached.payload;
+    return cached;
   } catch {
     return null;
   }
@@ -105,9 +105,9 @@ export default function OrdersWorkspace({ user }) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [guide, setGuide] = useState(searchParams.get("guide") || "");
-  const [channel, setChannel] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [channel, setChannel] = useState(searchParams.get("channel") || "");
+  const [from, setFrom] = useState(searchParams.get("from") || "");
+  const [to, setTo] = useState(searchParams.get("to") || "");
   const [selected, setSelected] = useState([]);
   const [detail, setDetail] = useState(null);
   const [locations, setLocations] = useState([]);
@@ -124,6 +124,7 @@ export default function OrdersWorkspace({ user }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [stale, setStale] = useState(false);
+  const [lastSuccessfulAt, setLastSuccessfulAt] = useState(null);
 
   const query = useMemo(
     () => ({ search, guide, channel, from, to, page, page_size: 25 }),
@@ -138,12 +139,14 @@ export default function OrdersWorkspace({ user }) {
       setOrders(payload.orders || []);
       setTotal(payload.total || 0);
       writeCache(user, payload);
+      setLastSuccessfulAt(payload.lastSuccessfulAt || new Date().toISOString());
       setStale(false);
     } catch (reason) {
       const cached = readCache(user);
       if (cached) {
-        setOrders(cached.orders || []);
-        setTotal(cached.total || 0);
+        setOrders(cached.payload.orders || []);
+        setTotal(cached.payload.total || 0);
+        setLastSuccessfulAt(cached.payload.lastSuccessfulAt || new Date(cached.savedAt).toISOString());
         setStale(true);
       } else {
         setOrders([]);
@@ -183,8 +186,11 @@ export default function OrdersWorkspace({ user }) {
     const next = new URLSearchParams();
     if (search) next.set("search", search);
     if (guide) next.set("guide", guide);
+    if (channel) next.set("channel", channel);
+    if (from) next.set("from", from);
+    if (to) next.set("to", to);
     setSearchParams(next, { replace: true });
-  }, [guide, search, setSearchParams]);
+  }, [channel, from, guide, search, setSearchParams, to]);
 
   const openOrder = async (orderId) => {
     setSaving("detail");
@@ -327,14 +333,15 @@ export default function OrdersWorkspace({ user }) {
         <div>
           <p className="eyebrow">VENTAS</p>
           <h1>Pedidos</h1>
-          <p>Operación local controlada, sin llamadas ni escrituras externas.</p>
+          <p>Operación Beta conectada al modelo canónico de pedidos.</p>
         </div>
-        <span className="local-safety-pill">externalWrites: 0</span>
+        <span className="local-safety-pill">Proveedores externos · solo lectura</span>
       </header>
 
       {stale && (
         <div className="orders-alert warning">
-          Vista de contingencia: se muestran los últimos datos locales por un máximo de 15 minutos.
+          Vista de contingencia: se conserva la última lectura correcta
+          {lastSuccessfulAt ? ` (${formatStatusDate(lastSuccessfulAt)})` : ""}. Las acciones de guardado están pausadas.
           <button type="button" onClick={loadOrders}>Reintentar ahora</button>
         </div>
       )}
@@ -466,7 +473,7 @@ export default function OrdersWorkspace({ user }) {
               <button
                 type="button"
                 className="primary-action"
-                disabled={!configDraft.warehouse_id || saving === "config"}
+                disabled={stale || !configDraft.warehouse_id || saving === "config"}
                 onClick={saveConfig}
               >
                 {saving === "config" ? "Guardando…" : "Guardar configuración"}
@@ -485,8 +492,8 @@ export default function OrdersWorkspace({ user }) {
             placeholder="Buscar pedido, cliente, correo, SKU o guía"
             aria-label="Buscar pedidos"
           />
-          <label>Desde<input type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
-          <label>Hasta<input type="date" value={to} onChange={(event) => setTo(event.target.value)} /></label>
+          <label>Desde<input type="date" value={from} onChange={(event) => { setFrom(event.target.value); setPage(1); }} /></label>
+          <label>Hasta<input type="date" value={to} onChange={(event) => { setTo(event.target.value); setPage(1); }} /></label>
           <select value={channel} onChange={(event) => { setChannel(event.target.value); setPage(1); }}>
             <option value="">Todos los canales</option>
             {options.channels?.map((item) => (
@@ -501,6 +508,7 @@ export default function OrdersWorkspace({ user }) {
             ["", "Todos"],
             ["missing", "Sin guía"],
             ["present_without_tracking", "Con guía · sin trazabilidad"],
+            ["pdf_missing", "Guía · PDF pendiente"],
             ["missing_or_without_tracking", "Revisión combinada"],
           ].map(([value, label]) => (
             <button
@@ -543,6 +551,11 @@ export default function OrdersWorkspace({ user }) {
                 {item.provider === "envia" && item.details?.cachedTotal != null && (
                   <small>PDF recuperados: {item.details.cachedTotal} · pendientes: {item.details.unavailable || 0}</small>
                 )}
+                {item.provider === "pamo_canonical" && item.details?.pdfAvailable != null && (
+                  <small>
+                    PDF disponibles: {item.details.pdfAvailable} · pendientes: {item.details.pdfMissing || 0}
+                  </small>
+                )}
                 {item.last_error_code && <small>Requiere revisión: {item.last_error_code}</small>}
               </article>
             ))}
@@ -557,7 +570,7 @@ export default function OrdersWorkspace({ user }) {
           <button
             type="button"
             className="primary-action"
-            disabled={!selected.length || saving === "whatsapp"}
+            disabled={stale || !selected.length || saving === "whatsapp"}
             onClick={prepareMessages}
           >
             {saving === "whatsapp" ? "Preparando…" : "Preparar WhatsApp Web"}
@@ -572,7 +585,7 @@ export default function OrdersWorkspace({ user }) {
               onChange={(event) => setSavedFilterName(event.target.value)}
               placeholder="Nombre de vista"
             />
-            <button type="button" className="secondary-action" onClick={saveCurrentFilter}>Guardar vista</button>
+            <button type="button" className="secondary-action" disabled={stale} onClick={saveCurrentFilter}>Guardar vista</button>
           </div>
         </div>
 
@@ -621,15 +634,16 @@ export default function OrdersWorkspace({ user }) {
                 <th>Costo envío</th>
                 <th>Transportadora</th>
                 <th>Guía</th>
+                <th>PDF</th>
                 <th>Trazabilidad</th>
               </tr>
             </thead>
             <tbody>
               {loading && !orders.length && (
-                <tr><td colSpan="12" className="empty-table">Cargando pedidos…</td></tr>
+                <tr><td colSpan="13" className="empty-table">Cargando pedidos…</td></tr>
               )}
               {!loading && !orders.length && (
-                <tr><td colSpan="12" className="empty-table">Sin pedidos para esta vista.</td></tr>
+                <tr><td colSpan="13" className="empty-table">Sin pedidos para esta vista.</td></tr>
               )}
               {orders.map((order) => (
                 <tr
@@ -680,6 +694,12 @@ export default function OrdersWorkspace({ user }) {
                   <td>{order.carrier_cost ? formatMoney(order.carrier_cost, order.currency) : "—"}</td>
                   <td><StackedValue values={order.carriers} /></td>
                   <td><StackedValue values={order.tracking_numbers} fallback="Sin guía" /></td>
+                  <td>
+                    <StackedValue
+                      values={(order.pdf_available || []).map((available) => available ? "Disponible" : "Pendiente")}
+                      fallback="Pendiente"
+                    />
+                  </td>
                   <td>
                     <span className={statusClass(arrayValue(order.logistics_state)[0])}>
                       {arrayValue(order.logistics_state).map((item) => stateLabels[item] || item).join(" · ")}
@@ -785,7 +805,7 @@ export default function OrdersWorkspace({ user }) {
                     <button
                       type="button"
                       className="primary-action shipment-save"
-                      disabled={saving === `shipment-${shipment.id}` || !shipment.warehouse_location_id}
+                      disabled={stale || saving === `shipment-${shipment.id}` || !shipment.warehouse_location_id}
                       onClick={() => saveShipment(shipment)}
                     >
                       {saving === `shipment-${shipment.id}` ? "Guardando…" : "Guardar despacho"}
@@ -807,7 +827,7 @@ export default function OrdersWorkspace({ user }) {
                         <input
                           type="file"
                           accept="application/pdf,image/jpeg,image/png"
-                          disabled={saving === `document-${shipment.id}`}
+                          disabled={stale || saving === `document-${shipment.id}`}
                           onChange={(event) => uploadGuide(shipment, event.target.files?.[0])}
                         />
                       </label>
