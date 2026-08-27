@@ -53,6 +53,31 @@ const channelLabels = {
   MADECENTRO: "Madecentro",
   RAPPI: "Rappi",
 };
+const shopifySyncBlockerLabels = {
+  SKU_MISSING: "Falta SKU",
+  SKU_NOT_LITERAL_UNIQUE: "SKU duplicado o ambiguo",
+  SHOPIFY_IDS_MISSING: "Falta vínculo exacto con Shopify",
+  SHOPIFY_SNAPSHOT_MISSING: "Falta lectura reciente de Shopify",
+  PRICE_NOT_CALCULABLE: "Falta costo o regla para calcular precio",
+  PRICE_INVALID: "Precio calculado inválido",
+  INVENTORY_SOURCE_MISSING: "Falta inventario externo confiable",
+  INVENTORY_SOURCE_AMBIGUOUS: "Hay más de una fuente de inventario",
+  INVENTORY_SOURCE_STALE: "Inventario externo vencido",
+  INVENTORY_SOURCE_NEGATIVE: "Inventario externo inválido",
+  SHOPIFY_INVENTORY_ITEM_ID_MISSING: "Falta vínculo del inventario Shopify",
+  SHOPIFY_LOCATION_NOT_UNIQUE: "Ubicación Shopify no identificada",
+};
+const shopifySyncBlockerLabel = (code) =>
+  shopifySyncBlockerLabels[code] || code;
+const shopifySyncFieldLabels = { PRICE: "Precio", INVENTORY: "Inventario" };
+const shopifySyncStatusLabels = {
+  READY: "Listo para piloto",
+  BLOCKED: "Bloqueado",
+  NO_CHANGE: "Sin cambios",
+  SUCCEEDED: "Sincronizado",
+  FAILED: "Falló",
+  CONFLICT: "Conflicto",
+};
 const channelBusinessModels = {
   SHOPIFY: { type: "DIRECT", commission: "DEDUCTED" },
   MERCADO_LIBRE: { type: "MARKETPLACE", commission: "DEDUCTED" },
@@ -70,15 +95,17 @@ const channelUsesCommission = (channel) =>
   channelBusinessModelFor(channel).commission === "DEDUCTED";
 const channelMetrics = [
   { key: "status", label: "Estado", description: "Publicación e inventario", visibleKey: "channel_status" },
+  { key: "inventory", label: "Inventario por ubicación", description: "Disponible en cada ubicación de Shopify; lectura local", visibleKey: "channel_inventory", channels: ["SHOPIFY"] },
   { key: "price", label: "Precio venta", description: "Publicado o vendido al canal", visibleKey: "channel_price" },
+  { key: "compare_at", label: "Precio de comparación", description: "Precio tachado vigente en Shopify; lectura local", visibleKey: "channel_compare_at", channels: ["SHOPIFY"] },
   { key: "commission", label: "Comisión", description: "Valor y tarifa, si aplica", visibleKey: "channel_commission" },
   { key: "costs", label: "Otros gastos", description: "Pasarela, administración, alistamiento y provisiones", visibleKey: "channel_costs" },
   { key: "profit", label: "Utilidad est.", description: "Después de costos conocidos", visibleKey: "channel_profit" },
   { key: "target", label: "Margen libre", description: "Objetivo esperado", visibleKey: "channel_target" },
   { key: "reserve", label: "Reserva logística", description: "4% del precio sugerido; máximo $40.000 por unidad", visibleKey: "channel_reserve", channels: ["SHOPIFY"] },
-  { key: "markup", label: "Markup requerido", description: "Incremento total sobre el costo necesario para cubrir gastos, margen y reserva", visibleKey: "channel_markup", channels: ["SHOPIFY"] },
+  { key: "markup", label: "Incremento sobre costo", description: "No es el margen: 113% significa que el precio sugerido equivale a 2,13 veces el costo", visibleKey: "channel_markup", channels: ["SHOPIFY"] },
   { key: "suggested", label: "Precio sugerido", description: "Simulación local; garantiza 20% estimado después de gastos conocidos y reserva", visibleKey: "channel_suggested", channels: ["SHOPIFY"] },
-  { key: "difference", label: "Diferencia", description: "Precio sugerido menos precio actual; no se publica en Shopify", visibleKey: "channel_difference", channels: ["SHOPIFY"] },
+  { key: "difference", label: "Posición frente al objetivo", description: "Verde: precio actual por encima del objetivo. Rojo: precio actual por debajo del objetivo", visibleKey: "channel_difference", channels: ["SHOPIFY"] },
   { key: "shipping", label: "Envío", description: "Empresa / cliente; promedio si falta tarifa", visibleKey: "channel_shipping" },
   { key: "quality", label: "Calidad", description: "Calidad de publicación", visibleKey: "channel_quality" },
   { key: "missing", label: "Faltantes", description: "Información por completar", visibleKey: "channel_missing" },
@@ -90,15 +117,17 @@ const optionalColumns = [
   ["siigo", "Siigo"],
   ["channels", "Canales"],
   ["channel_status", "Canales · Estado"],
+  ["channel_inventory", "Shopify · Inventario por ubicación"],
   ["channel_price", "Canales · Precio venta"],
+  ["channel_compare_at", "Shopify · Precio de comparación"],
   ["channel_commission", "Canales · Comisión"],
   ["channel_costs", "Canales · Otros gastos"],
   ["channel_profit", "Canales · Utilidad estimada"],
   ["channel_target", "Canales · Margen libre"],
   ["channel_reserve", "Shopify · Reserva logística"],
-  ["channel_markup", "Shopify · Markup requerido"],
+  ["channel_markup", "Shopify · Incremento sobre costo"],
   ["channel_suggested", "Shopify · Precio sugerido"],
-  ["channel_difference", "Shopify · Diferencia de precio"],
+  ["channel_difference", "Shopify · Posición frente al objetivo"],
   ["channel_shipping", "Canales · Envío"],
   ["channel_quality", "Canales · Calidad"],
   ["channel_missing", "Canales · Faltantes"],
@@ -110,6 +139,7 @@ const channelMetricsFor = (channel) =>
   );
 const channelMetricLabelFor = (channel, metric) => {
   if (channel === "SHOPIFY" && metric.key === "price") return "Precio actual";
+  if (channel === "SHOPIFY" && metric.key === "compare_at") return "Precio de comparación";
   if (channel === "SHOPIFY" && metric.key === "commission") return "Mercado Pago";
   if (channel === "SHOPIFY" && metric.key === "costs") return "Gastos empresa";
   if (channel === "SHOPIFY" && metric.key === "target") return "Margen neto";
@@ -166,6 +196,25 @@ const priceDifference = (channelPrice, shopifyPrice) => {
     : 0;
   return `${delta > 0 ? "+" : ""}${money(delta)} (${delta > 0 ? "+" : ""}${percentage.toFixed(1)}%)`;
 };
+const suggestedPriceAdjustment = (value) => {
+  const difference = Number(value || 0);
+  if (difference > 0) return { label: `Por debajo ${money(difference)}`, tone: "is-shortfall" };
+  if (difference < 0) return { label: `Por encima ${money(Math.abs(difference))}`, tone: "is-headroom" };
+  return { label: "En objetivo", tone: "is-on-target" };
+};
+const shippingBandLabel = (average) => {
+  const labels = {
+    HASTA_1_KG: "Hasta 1 kg",
+    HASTA_1_KG_ASUMIDO: "Menos de 1 kg · asumido",
+    "1_A_2_KG": "1 a 2 kg",
+    "2_A_5_KG": "2 a 5 kg",
+    "5_A_10_KG": "5 a 10 kg",
+    MAS_DE_10_KG: "Más de 10 kg",
+    LAVAMANOS_VOLUMINOSO: "Lavamanos voluminoso · P75 histórico",
+    LAVAPLATOS_VOLUMINOSO: "Lavaplatos voluminoso · P75 histórico",
+  };
+  return labels[average?.tariff_band] || average?.tariff_band || "Sin datos";
+};
 
 const channelSnapshotFor = (row, channel) =>
   channel === "SODIMAC" ? null : row.channels[channel];
@@ -192,11 +241,50 @@ const channelPriceFor = (row, channel) => {
   return snapshot?.price ?? null;
 };
 
+const shopifyCompareAtPriceFor = (row) =>
+  channelSnapshotFor(row, "SHOPIFY")?.compare_at_price ??
+  row.variant.compare_at_price ??
+  null;
+
 const channelInventoryFor = (row, channel) => {
   if (channel === "SODIMAC")
     return row.sodimac?.latest_observation?.inventory_available ?? null;
   return channelSnapshotFor(row, channel)?.inventory_available ?? null;
 };
+
+const shopifyInventoryLocationsFor = (row) =>
+  [...(row.variant.inventory_levels || [])].sort((left, right) => {
+    const availabilityDifference =
+      Number(right.available || 0) - Number(left.available || 0);
+    if (availabilityDifference) return availabilityDifference;
+    return String(left.location_name || "").localeCompare(
+      String(right.location_name || ""),
+      "es",
+      { sensitivity: "base" },
+    );
+  });
+
+const shopifyInventoryStatusFor = (row) => {
+  const locations = shopifyInventoryLocationsFor(row);
+  if (!locations.length) return "Sin ubicaciones";
+  return locations.some((location) => Number(location.available || 0) > 0)
+    ? "Con disponibilidad"
+    : "Sin disponibilidad";
+};
+
+const shopifyInventoryTotalFor = (row) => {
+  const locations = shopifyInventoryLocationsFor(row);
+  if (!locations.length) return null;
+  return locations.reduce(
+    (total, location) => total + Number(location.available || 0),
+    0,
+  );
+};
+
+const inventoryQuantity = (value) =>
+  new Intl.NumberFormat("es-CO", { maximumFractionDigits: 3 }).format(
+    Number(value || 0),
+  );
 
 const channelQualityFor = (row, channel) => {
   if (channel === "SODIMAC") {
@@ -557,7 +645,33 @@ function ChannelMetricCell({ row, channel, metric, pinned = false }) {
           value={channelStateFor(row, channel)}
           tone={channelExistsFor(row, channel) ? undefined : "neutral"}
         />
-        <small>{inventory == null ? "Inv. —" : `Inv. ${inventory}`}</small>
+        {channel !== "SHOPIFY" && (
+          <small>{inventory == null ? "Inv. —" : `Inv. ${inventory}`}</small>
+        )}
+      </td>
+    );
+  }
+  if (metric === "inventory") {
+    const locations = shopifyInventoryLocationsFor(row);
+    const total = shopifyInventoryTotalFor(row);
+    const observed = locations
+      .map((location) => location.observed_at)
+      .filter(Boolean)
+      .sort()
+      .at(-1);
+    return (
+      <td
+        className={`${className} shopify-location-inventory`}
+        title={`Inventario Shopify por ubicación, solo lectura local.${observed ? ` Última observación: ${observed}.` : ""}`}
+      >
+        <strong>{total == null ? "Sin ubicaciones" : inventoryQuantity(total)}</strong>
+        {locations.slice(0, 4).map((location) => (
+          <small key={location.location_external_id || location.location_name}>
+            <span>{location.location_name || "Ubicación sin nombre"}</span>
+            <b>{inventoryQuantity(location.available)}</b>
+          </small>
+        ))}
+        {locations.length > 4 && <small>+{locations.length - 4} ubicaciones</small>}
       </td>
     );
   }
@@ -572,6 +686,17 @@ function ChannelMetricCell({ row, channel, metric, pinned = false }) {
             {priceDifference(price, shopifyPrice)}
           </small>
         )}
+      </td>
+    );
+  }
+  if (metric === "compare_at") {
+    const compareAtPrice = shopifyCompareAtPriceFor(row);
+    return (
+      <td
+        className={className}
+        title="Precio de comparación vigente en Shopify. En este laboratorio es de solo lectura; editarlo requerirá una propuesta aprobada y una sincronización autorizada."
+      >
+        <strong>{money(compareAtPrice)}</strong>
       </td>
     );
   }
@@ -659,18 +784,29 @@ function ChannelMetricCell({ row, channel, metric, pinned = false }) {
         </td>
       );
     }
+    const difference = suggestedPriceAdjustment(simulation.difference_amount);
     const values = {
       reserve: money(simulation.logistics_reserve_amount),
       markup: percent(simulation.markup_percent),
       suggested: money(simulation.suggested_price),
-      difference: money(simulation.difference_amount),
+      difference: difference.label,
     };
+    const metricClassName = `${className} ${metric === "difference" ? difference.tone : ""}`.trim();
+    const markupMultiple = (1 + Number(simulation.markup_percent) / 100).toFixed(2);
     return (
       <td
-        className={className}
+        className={metricClassName}
         title={
           metric === "reserve" && simulation.logistics_reserve_basis === "CAPPED"
             ? "La reserva alcanzó el tope máximo de $40.000 por unidad."
+            : metric === "markup"
+              ? `El precio sugerido equivale a ${markupMultiple} veces el costo. Este porcentaje no es la utilidad ni el margen neto.`
+              : metric === "difference"
+                ? difference.tone === "is-shortfall"
+                  ? "El precio actual está por debajo del objetivo por este valor. No significa necesariamente una pérdida contable."
+                  : difference.tone === "is-headroom"
+                    ? "El precio actual está por encima del objetivo por este valor."
+                    : "El precio actual coincide con el sugerido."
             : undefined
         }
       >
@@ -721,6 +857,7 @@ function ChannelMetricCell({ row, channel, metric, pinned = false }) {
             {buyerAmount != null && <strong>{money(buyerAmount)}</strong>}
           </span>
         )}
+        {usesAverage && <small>{shippingBandLabel(average)}</small>}
         {noCoverage && (
           <strong>
             No disponible
@@ -988,6 +1125,7 @@ export default function CatalogWorkspace({ user }) {
           "density",
           "columns",
           "columns-layout",
+          "columns-layout-schema",
           "pinned-column",
           "column-filters",
           "table-sort",
@@ -1059,6 +1197,9 @@ export default function CatalogWorkspace({ user }) {
   );
   const [notice, setNotice] = useState("");
   const [channelRefresh, setChannelRefresh] = useState(null);
+  const [shopifySync, setShopifySync] = useState(null);
+  const [shopifySyncLoading, setShopifySyncLoading] = useState(false);
+  const [shopifySyncOpen, setShopifySyncOpen] = useState(false);
   const [simulation, setSimulation] = useState(null);
   const [simulationError, setSimulationError] = useState("");
   const [page, setPage] = useState(() =>
@@ -1069,7 +1210,30 @@ export default function CatalogWorkspace({ user }) {
   );
   const [visibleColumns, setVisibleColumns] = useState(() => {
     const saved = safeRead(storageKeys["columns-layout"], defaultColumns);
-    return saved.filter((key) => optionalColumns.some(([item]) => item === key));
+    const normalized = saved.filter((key) =>
+      optionalColumns.some(([item]) => item === key),
+    );
+    const layoutSchema = safeRead(storageKeys["columns-layout-schema"], 1);
+    if (
+      layoutSchema < 2 &&
+      normalized.includes("channel_price") &&
+      !normalized.includes("channel_compare_at")
+    ) {
+      const priceIndex = normalized.indexOf("channel_price");
+      normalized.splice(priceIndex + 1, 0, "channel_compare_at");
+      safeWrite(storageKeys["columns-layout"], normalized);
+    }
+    if (
+      layoutSchema < 3 &&
+      normalized.includes("channel_status") &&
+      !normalized.includes("channel_inventory")
+    ) {
+      const statusIndex = normalized.indexOf("channel_status");
+      normalized.splice(statusIndex + 1, 0, "channel_inventory");
+      safeWrite(storageKeys["columns-layout"], normalized);
+    }
+    safeWrite(storageKeys["columns-layout-schema"], 3);
+    return normalized;
   });
   const [pinnedColumn, setPinnedColumn] = useState(() =>
     safeRead(storageKeys["pinned-column"], "", DRAFT_TTL_MS),
@@ -1106,6 +1270,9 @@ export default function CatalogWorkspace({ user }) {
   });
   const [viewName, setViewName] = useState("");
   const tableScrollRef = useRef(null);
+  const workspaceRequestRef = useRef(null);
+  const workspaceRequestSequenceRef = useRef(0);
+  const workspaceResultCacheRef = useRef(new Map());
   const [coverageOpen, setCoverageOpen] = useState(() =>
     safeRead(storageKeys["coverage-open"], false, DRAFT_TTL_MS),
   );
@@ -1127,12 +1294,37 @@ export default function CatalogWorkspace({ user }) {
     ),
   );
 
+  useEffect(
+    () => () => workspaceRequestRef.current?.abort(),
+    [],
+  );
+
   const load = async (
     requestedPage = page,
     requestedFilters = filters,
     requestedColumnFilters = columnFilters,
     requestedSort = tableSort,
   ) => {
+    workspaceRequestRef.current?.abort();
+    const controller = new AbortController();
+    workspaceRequestRef.current = controller;
+    const requestSequence = workspaceRequestSequenceRef.current + 1;
+    workspaceRequestSequenceRef.current = requestSequence;
+    const requestKey = JSON.stringify([
+      requestedPage,
+      requestedFilters,
+      requestedColumnFilters,
+      requestedSort,
+    ]);
+    const memoryCached = workspaceResultCacheRef.current.get(requestKey);
+    if (memoryCached && Date.now() - memoryCached.savedAt < 30_000) {
+      setWorkspace(memoryCached.data);
+      setAppliedFilters({ ...initialFilters, ...requestedFilters });
+      setPage(memoryCached.data.pagination?.page || requestedPage);
+      setLoading(false);
+      setStale(false);
+      return;
+    }
     setLoading(true);
     setNotice("");
     try {
@@ -1141,7 +1333,9 @@ export default function CatalogWorkspace({ user }) {
         requestedFilters,
         requestedColumnFilters,
         requestedSort,
+        controller.signal,
       );
+      if (requestSequence !== workspaceRequestSequenceRef.current) return;
       if (
         !workspaceResult.ok ||
         !workspaceResult.data?.summary ||
@@ -1150,6 +1344,49 @@ export default function CatalogWorkspace({ user }) {
         throw new Error("La API local no devolvió un catálogo válido.");
       }
       setWorkspace(workspaceResult.data);
+      workspaceResultCacheRef.current.set(requestKey, {
+        data: workspaceResult.data,
+        savedAt: Date.now(),
+      });
+      if (workspaceResultCacheRef.current.size > 12) {
+        const oldestKey = workspaceResultCacheRef.current.keys().next().value;
+        workspaceResultCacheRef.current.delete(oldestKey);
+      }
+      const currentPage = workspaceResult.data.pagination?.page || requestedPage;
+      const totalPages = workspaceResult.data.pagination?.pages || currentPage;
+      if (currentPage < totalPages) {
+        const nextPage = currentPage + 1;
+        const nextKey = JSON.stringify([
+          nextPage,
+          requestedFilters,
+          requestedColumnFilters,
+          requestedSort,
+        ]);
+        if (!workspaceResultCacheRef.current.has(nextKey)) {
+          window.setTimeout(async () => {
+            try {
+              const prefetched = await catalogApi.workspace(
+                nextPage,
+                requestedFilters,
+                requestedColumnFilters,
+                requestedSort,
+              );
+              if (
+                prefetched.ok &&
+                prefetched.data?.summary &&
+                Array.isArray(prefetched.data?.products)
+              ) {
+                workspaceResultCacheRef.current.set(nextKey, {
+                  data: prefetched.data,
+                  savedAt: Date.now(),
+                });
+              }
+            } catch {
+              // La precarga es opcional y nunca reemplaza la vista vigente.
+            }
+          }, 300);
+        }
+      }
       setAppliedFilters({ ...initialFilters, ...requestedFilters });
       setPage(workspaceResult.data.pagination?.page || requestedPage);
       const timestamp = new Date().toISOString();
@@ -1163,6 +1400,14 @@ export default function CatalogWorkspace({ user }) {
         lastSuccess: timestamp,
       });
     } catch (error) {
+      if (
+        controller.signal.aborted ||
+        error?.code === "ERR_CANCELED" ||
+        error?.name === "CanceledError" ||
+        requestSequence !== workspaceRequestSequenceRef.current
+      ) {
+        return;
+      }
       const cached = safeRead(
         storageKeys["workspace-cache"],
         null,
@@ -1185,7 +1430,9 @@ export default function CatalogWorkspace({ user }) {
         setNotice(error.message);
       }
     } finally {
-      setLoading(false);
+      if (requestSequence === workspaceRequestSequenceRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -1287,6 +1534,40 @@ export default function CatalogWorkspace({ user }) {
     await load(1, appliedFilters, columnFilters, tableSort);
   };
 
+  const loadShopifySync = async () => {
+    const result = await catalogApi.shopifySyncWorkspace();
+    if (result.ok) setShopifySync(result.data);
+  };
+
+  const previewShopifySync = async () => {
+    if (stale || shopifySyncLoading) return;
+    setShopifySyncLoading(true);
+    try {
+      const selectedSkus = allMatchingSelected
+        ? []
+        : tableRows
+            .filter((row) => selected.includes(row.id))
+            .map((row) => row.variant?.sku)
+            .filter(Boolean);
+      const result = await catalogApi.shopifySyncAction({
+        action: "PREVIEW",
+        skus: selectedSkus,
+        limit: selectedSkus.length || 250,
+      });
+      if (!result.ok) {
+        setNotice(result.data?.detail || "No fue posible preparar la vista previa Shopify.");
+        return;
+      }
+      setShopifySync(result.data);
+      setShopifySyncOpen(true);
+      setNotice(
+        `Vista previa Shopify: ${result.data.latest_run?.counts?.ready || 0} cambios listos y ${result.data.latest_run?.counts?.blocked || 0} bloqueados. No se escribió Shopify.`,
+      );
+    } finally {
+      setShopifySyncLoading(false);
+    }
+  };
+
   const loadAlignment = async ({
     channel = alignmentChannel,
     page: requestedPage = alignmentPage,
@@ -1317,6 +1598,7 @@ export default function CatalogWorkspace({ user }) {
   // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     load(1);
+    void loadShopifySync();
   }, []);
   // Los paneles costosos se hidratan al abrir su pestaña; nunca bloquean el
   // primer render del catálogo.
@@ -1512,6 +1794,16 @@ export default function CatalogWorkspace({ user }) {
           sort: (row) => channelPriceFor(row, channel),
           filter: (row) => money(channelPriceFor(row, channel)),
         };
+      if (metric === "compare_at")
+        return {
+          sort: (row) => shopifyCompareAtPriceFor(row),
+          filter: (row) => money(shopifyCompareAtPriceFor(row)),
+        };
+      if (metric === "inventory")
+        return {
+          sort: (row) => shopifyInventoryTotalFor(row),
+          filter: (row) => shopifyInventoryStatusFor(row),
+        };
       if (metric === "profit")
         return {
           sort: (row) => channelProfitFor(row, channel).amount,
@@ -1549,7 +1841,9 @@ export default function CatalogWorkspace({ user }) {
           filter: (row) => {
             const value = valueFor(row);
             if (value == null) return "Sin costo";
-            return metric === "markup" ? percent(value) : money(value);
+            if (metric === "markup") return percent(value);
+            if (metric === "difference") return suggestedPriceAdjustment(value).label;
+            return money(value);
           },
         };
       }
@@ -2133,6 +2427,75 @@ export default function CatalogWorkspace({ user }) {
           <span className="safety-pill">● Solo lectura · externalWrites=0</span>
         </div>
       </header>
+
+      {shopifySync && (
+        <section className={`shopify-sync-beta ${shopifySyncOpen ? "is-open" : ""}`}>
+          <button
+            type="button"
+            className="shopify-sync-summary"
+            aria-expanded={shopifySyncOpen}
+            onClick={() => setShopifySyncOpen((current) => !current)}
+          >
+            <div>
+              <span>Sincronización Shopify · Beta</span>
+              <strong>Precios e inventario con cola, auditoría y control de concurrencia</strong>
+            </div>
+            <div>
+              <b>{shopifySync.gates?.execution_allowed ? "Piloto habilitado" : "Escrituras apagadas"}</b>
+              <small>{shopifySyncOpen ? "Ocultar" : "Revisar"}</small>
+            </div>
+          </button>
+          {shopifySyncOpen && (
+            <div className="shopify-sync-body">
+              <div className="shopify-sync-kpis">
+                <span><small>Modo</small><strong>{shopifySync.environment}</strong></span>
+                <span><small>Listos</small><strong>{shopifySync.latest_run?.counts?.ready || 0}</strong></span>
+                <span><small>Bloqueados</small><strong>{shopifySync.latest_run?.counts?.blocked || 0}</strong></span>
+                <span><small>Escrituras</small><strong>{shopifySync.latest_run?.external_writes || 0}</strong></span>
+              </div>
+              <div className="shopify-sync-copy">
+                <p>
+                  El detector recurrente consolida cambios locales. El inventario solo se propone cuando existe una fuente externa canónica, vigente y vinculada a una única ubicación de Shopify. La lectura de Shopify nunca se usa como si fuera un inventario nuevo del proveedor.
+                </p>
+                <ul>
+                  <li>Precio: cálculo local vigente, costo trazable y SKU literal único.</li>
+                  <li>Inventario: compare-and-set para no pisar cambios concurrentes.</li>
+                  <li>Piloto: máximo {shopifySync.policy?.maximum_batch_size || 5} SKU y autorización separada.</li>
+                </ul>
+              </div>
+              <div className="shopify-sync-actions">
+                <button type="button" onClick={previewShopifySync} disabled={stale || shopifySyncLoading}>
+                  {shopifySyncLoading
+                    ? "Preparando…"
+                    : allMatchingSelected
+                      ? "Revisar muestra de 250"
+                      : selectedCount
+                        ? `Revisar ${selectedCount} seleccionados`
+                        : "Preparar vista previa"}
+                </button>
+                <span>
+                  Recurrente en Beta al configurar el worker · ejecución externa desactivada
+                </span>
+              </div>
+              {!!shopifySync.latest_run?.items?.length && (
+                <div className="shopify-sync-items">
+                  {shopifySync.latest_run.items.slice(0, 8).map((item) => (
+                    <article key={item.id} data-status={item.status}>
+                      <strong>{item.sku || "SKU pendiente"}</strong>
+                      <span>
+                        {item.fields?.map((field) => shopifySyncFieldLabels[field] || field).join(" + ")
+                          || shopifySyncStatusLabels[item.status]
+                          || item.status}
+                      </span>
+                      <small>{item.blockers?.map(shopifySyncBlockerLabel).join(" · ") || "Sin bloqueos"}</small>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      )}
 
       {channelRefresh?.run_id && (
         <section className={`channel-refresh-panel ${String(channelRefresh.status).toLowerCase()}`} aria-live="polite">
@@ -2841,7 +3204,7 @@ export default function CatalogWorkspace({ user }) {
                               : money(row.shipping.average_shipping.amount)}
                           </strong>
                           <small>
-                            {row.shipping.average_shipping?.tariff_band || "Sin datos"}
+                            {shippingBandLabel(row.shipping.average_shipping)}
                             {" · estimado"}
                           </small>
                         </td>

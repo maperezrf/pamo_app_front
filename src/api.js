@@ -1,8 +1,8 @@
 import httpClient, { refreshCsrfToken } from "./lib/httpClient";
 
-async function request(path, { method = "GET", body } = {}) {
+async function request(path, { method = "GET", body, signal } = {}) {
   try {
-    const response = await httpClient.request({ url: path, method, data: body });
+    const response = await httpClient.request({ url: path, method, data: body, signal });
     return { ok: true, status: response.status, data: response.data ?? null };
   } catch (error) {
     if (error.response) {
@@ -36,7 +36,7 @@ export const api = {
   menu: () => request("/api/auth/menu/"),
   pingAdmin: () => request("/api/auth/ping-admin/"),
   listarPrototipos: () => request("/api/tracking/prototipos/admin/"),
-  catalogWorkspace: (page = 1, filters = {}, columnFilters = {}, tableSort = null) => {
+  catalogWorkspace: (page = 1, filters = {}, columnFilters = {}, tableSort = null, signal) => {
     const params = new URLSearchParams({ page: String(page), page_size: "50" });
     Object.entries(filters).forEach(([key, value]) => {
       if (value && key !== "period" && key !== "marginMin") params.set(key, value);
@@ -46,7 +46,7 @@ export const api = {
       params.set("sort_key", tableSort.key);
       params.set("sort_direction", tableSort.direction);
     }
-    return request(`/api/catalogo/workspace/?${params.toString()}`);
+    return request(`/api/catalogo/workspace/?${params.toString()}`, { signal });
   },
   catalogColumnOptions: (column) => {
     const params = new URLSearchParams({ column });
@@ -62,6 +62,8 @@ export const api = {
   },
   catalogExecutiveSimulation: () => request("/api/catalogo/executive/simulation/"),
   catalogShopifyImportPlan: () => request("/api/catalogo/shopify/import-plan/"),
+  catalogShopifySyncWorkspace: () => request("/api/catalogo/shopify/sync-workspace/"),
+  catalogShopifySyncAction: (body) => request("/api/catalogo/shopify/sync-workspace/", { method: "POST", body }),
   catalogPilotSimulation: () => request("/api/catalogo/pilot/simulation/"),
   catalogPhysicalReviewQueue: (filters = {}) => {
     const params = new URLSearchParams();
