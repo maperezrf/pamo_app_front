@@ -69,15 +69,19 @@ const channelBusinessModelFor = (channel) =>
 const channelUsesCommission = (channel) =>
   channelBusinessModelFor(channel).commission === "DEDUCTED";
 const channelMetrics = [
-  { key: "status", label: "Estado", visibleKey: "channel_status" },
-  { key: "price", label: "Precio venta", visibleKey: "channel_price" },
-  { key: "commission", label: "Comisión", visibleKey: "channel_commission" },
-  { key: "costs", label: "Otros gastos", visibleKey: "channel_costs" },
-  { key: "profit", label: "Utilidad est.", visibleKey: "channel_profit" },
-  { key: "target", label: "Margen libre", visibleKey: "channel_target" },
-  { key: "shipping", label: "Envío", visibleKey: "channel_shipping" },
-  { key: "quality", label: "Calidad", visibleKey: "channel_quality" },
-  { key: "missing", label: "Faltantes", visibleKey: "channel_missing" },
+  { key: "status", label: "Estado", description: "Publicación e inventario", visibleKey: "channel_status" },
+  { key: "price", label: "Precio venta", description: "Publicado o vendido al canal", visibleKey: "channel_price" },
+  { key: "commission", label: "Comisión", description: "Valor y tarifa, si aplica", visibleKey: "channel_commission" },
+  { key: "costs", label: "Otros gastos", description: "Pasarela, administración, alistamiento y provisiones", visibleKey: "channel_costs" },
+  { key: "profit", label: "Utilidad est.", description: "Después de costos conocidos", visibleKey: "channel_profit" },
+  { key: "target", label: "Margen libre", description: "Objetivo esperado", visibleKey: "channel_target" },
+  { key: "reserve", label: "Reserva logística", description: "4% del precio sugerido; máximo $40.000 por unidad", visibleKey: "channel_reserve", channels: ["SHOPIFY"] },
+  { key: "markup", label: "Markup requerido", description: "Incremento total sobre el costo necesario para cubrir gastos, margen y reserva", visibleKey: "channel_markup", channels: ["SHOPIFY"] },
+  { key: "suggested", label: "Precio sugerido", description: "Simulación local; garantiza 20% estimado después de gastos conocidos y reserva", visibleKey: "channel_suggested", channels: ["SHOPIFY"] },
+  { key: "difference", label: "Diferencia", description: "Precio sugerido menos precio actual; no se publica en Shopify", visibleKey: "channel_difference", channels: ["SHOPIFY"] },
+  { key: "shipping", label: "Envío", description: "Empresa / cliente; promedio si falta tarifa", visibleKey: "channel_shipping" },
+  { key: "quality", label: "Calidad", description: "Calidad de publicación", visibleKey: "channel_quality" },
+  { key: "missing", label: "Faltantes", description: "Información por completar", visibleKey: "channel_missing" },
 ];
 const optionalColumns = [
   ["provider", "Proveedor"],
@@ -91,11 +95,26 @@ const optionalColumns = [
   ["channel_costs", "Canales · Otros gastos"],
   ["channel_profit", "Canales · Utilidad estimada"],
   ["channel_target", "Canales · Margen libre"],
+  ["channel_reserve", "Shopify · Reserva logística"],
+  ["channel_markup", "Shopify · Markup requerido"],
+  ["channel_suggested", "Shopify · Precio sugerido"],
+  ["channel_difference", "Shopify · Diferencia de precio"],
   ["channel_shipping", "Canales · Envío"],
   ["channel_quality", "Canales · Calidad"],
   ["channel_missing", "Canales · Faltantes"],
 ];
 const channelMetricColumnKey = (channel, metric) => `${channel}__${metric}`;
+const channelMetricsFor = (channel) =>
+  channelMetrics.filter(
+    (metric) => !metric.channels || metric.channels.includes(channel),
+  );
+const channelMetricLabelFor = (channel, metric) => {
+  if (channel === "SHOPIFY" && metric.key === "price") return "Precio actual";
+  if (channel === "SHOPIFY" && metric.key === "commission") return "Mercado Pago";
+  if (channel === "SHOPIFY" && metric.key === "costs") return "Gastos empresa";
+  if (channel === "SHOPIFY" && metric.key === "target") return "Margen neto";
+  return metric.label;
+};
 const pinnableColumns = [
   ["photo", "Foto"],
   ["sku", "SKU"],
@@ -105,16 +124,18 @@ const pinnableColumns = [
   ["shipping", "Precio promedio de envío"],
   ["siigo", "Siigo"],
   ...channelColumns.flatMap(([channel, channelLabel]) =>
-    channelMetrics.map((metric) => [
+    channelMetricsFor(channel).map((metric) => [
       channelMetricColumnKey(channel, metric.key),
-      `${channelLabel} · ${metric.label}`,
+      `${channelLabel} · ${channelMetricLabelFor(channel, metric)}`,
       metric.visibleKey,
       channel,
     ]),
   ),
 ];
 const channelMetricColumnKeys = channelColumns.flatMap(([channel]) =>
-  channelMetrics.map((metric) => channelMetricColumnKey(channel, metric.key)),
+  channelMetricsFor(channel).map((metric) =>
+    channelMetricColumnKey(channel, metric.key),
+  ),
 );
 const supportedTableColumnKeys = new Set([
   "photo",
@@ -250,15 +271,22 @@ const channelProfitFor = (row, channel) => {
   const price = channelPriceFor(row, channel);
   const cost = row.currentShopifyCost;
   if (price == null || cost == null) {
+    const missingPrice = price == null;
+    const missingCost = cost == null;
     return {
       amount: null,
-      label: "Pendiente",
+      label:
+        missingPrice && missingCost
+          ? "Faltan precio y costo"
+          : missingCost
+            ? "Falta costo Shopify"
+            : "Falta precio",
       available: false,
       verified: false,
       margin: null,
       missingConcepts: [
-        ...(price == null ? ["Precio"] : []),
-        ...(cost == null ? ["Costo"] : []),
+        ...(missingPrice ? ["Precio"] : []),
+        ...(missingCost ? ["Costo Shopify"] : []),
       ],
     };
   }
@@ -297,6 +325,9 @@ const channelCommercialFor = (row, channel) => {
     ? profitability
     : null;
 };
+
+const shopifyPricingSimulationFor = (row) =>
+  channelCommercialFor(row, "SHOPIFY")?.pricing_simulation || null;
 
 const channelMissingFor = (row, channel) => {
   if (!channelExistsFor(row, channel)) return ["Publicación"];
@@ -541,9 +572,6 @@ function ChannelMetricCell({ row, channel, metric, pinned = false }) {
             {priceDifference(price, shopifyPrice)}
           </small>
         )}
-        {channelBusinessModelFor(channel).type === "WHOLESALE" && (
-          <small>Precio de venta al canal</small>
-        )}
       </td>
     );
   }
@@ -588,20 +616,29 @@ function ChannelMetricCell({ row, channel, metric, pinned = false }) {
       );
     }
     const commercial = channelCommercialFor(row, channel);
+    const commissionRate = commercial?.commission_percent;
     return (
-      <td className={className}>
+      <td
+        className={className}
+        title={
+          commissionRate == null
+            ? "Tarifa de comisión pendiente"
+            : `Tarifa aplicada: ${percent(commissionRate)}`
+        }
+      >
         <strong>{commercial?.commission_amount == null ? "Pendiente" : money(commercial.commission_amount)}</strong>
-        {commercial?.commission_percent != null && <small>{percent(commercial.commission_percent)}</small>}
       </td>
     );
   }
   if (metric === "costs") {
     const commercial = channelCommercialFor(row, channel);
     const amount = commercial?.other_cost_amount;
+    const labels = Array.isArray(commercial?.other_cost_labels)
+      ? commercial.other_cost_labels.join(" · ")
+      : "";
     return (
-      <td className={className} title="Pasarela cuando aplica, administración, alistamiento, bodegaje y provisiones configuradas">
+      <td className={className} title={labels || "Pasarela cuando aplica, administración, alistamiento, bodegaje y provisiones configuradas"}>
         <strong>{amount == null ? "Pendiente" : money(amount)}</strong>
-        {Array.isArray(commercial?.other_cost_labels) && commercial.other_cost_labels.length > 0 && <small>{commercial.other_cost_labels.join(" · ")}</small>}
       </td>
     );
   }
@@ -610,7 +647,34 @@ function ChannelMetricCell({ row, channel, metric, pinned = false }) {
     return (
       <td className={className}>
         <strong>{commercial?.target_label || "20–25%"}</strong>
-        {!commercial?.target_label && <small>Objetivo sugerido</small>}
+      </td>
+    );
+  }
+  if (["reserve", "markup", "suggested", "difference"].includes(metric)) {
+    const simulation = shopifyPricingSimulationFor(row);
+    if (!simulation || simulation.status !== "SIMULATED_LOCAL") {
+      return (
+        <td className={className} title="Se necesita el costo del producto para calcular la simulación.">
+          <strong>Sin costo</strong>
+        </td>
+      );
+    }
+    const values = {
+      reserve: money(simulation.logistics_reserve_amount),
+      markup: percent(simulation.markup_percent),
+      suggested: money(simulation.suggested_price),
+      difference: money(simulation.difference_amount),
+    };
+    return (
+      <td
+        className={className}
+        title={
+          metric === "reserve" && simulation.logistics_reserve_basis === "CAPPED"
+            ? "La reserva alcanzó el tope máximo de $40.000 por unidad."
+            : undefined
+        }
+      >
+        <strong>{values[metric]}</strong>
       </td>
     );
   }
@@ -627,6 +691,13 @@ function ChannelMetricCell({ row, channel, metric, pinned = false }) {
       shipping?.seller_estimate == null &&
       shipping?.buyer_charge == null &&
       /no coverage options found/i.test(shippingError || "");
+    const sellerAmount = usesAverage
+      ? average.amount
+      : shipping?.seller_estimate;
+    const buyerAmount = shipping?.buyer_charge;
+    const modalityDetail = modalityLabels.length
+      ? ` Modalidades: ${modalityLabels.join(" · ")}.`
+      : "";
     return (
       <td
         className={className}
@@ -635,34 +706,26 @@ function ChannelMetricCell({ row, channel, metric, pinned = false }) {
             ? "Mercado Libre no encontró cobertura de envío para esta publicación. La modalidad logística figura como no configurada."
             : shippingError ||
               (usesAverage
-                ? "Promedio informativo de guías realizadas para la banda del producto. No forma parte del costo ni de la utilidad y será reemplazado por la cotización real."
+                ? `Promedio informativo de guías realizadas para la banda ${average.tariff_band || "SIN_DATOS"}. No forma parte del costo ni de la utilidad y será reemplazado por la cotización real.${modalityDetail}`
                 : undefined) ||
               (shipping?.seller_estimate_strategy?.startsWith("MAX_ELIGIBLE")
-                ? "Antes de la venta se aplica el mayor valor entre la cotización del SKU y el P75 real de 90 días para las modalidades habilitadas. El costo definitivo se conciliará con la orden."
-                : undefined)
+                ? `Antes de la venta se aplica el mayor valor entre la cotización del SKU y el P75 real de 90 días para las modalidades habilitadas. El costo definitivo se conciliará con la orden.${modalityDetail}`
+                : modalityDetail || undefined)
         }
       >
-        <span>
-          <small>{usesAverage ? "Promedio estimado" : "Costo preventivo"}</small>
+        {noCoverage ? (
+          <strong>Sin cobertura ML</strong>
+        ) : (
+          <span className="shipping-value-stack">
+            <strong>{money(sellerAmount)}</strong>
+            {buyerAmount != null && <strong>{money(buyerAmount)}</strong>}
+          </span>
+        )}
+        {noCoverage && (
           <strong>
-            {noCoverage
-              ? "Sin cobertura ML"
-              : money(usesAverage ? average.amount : shipping?.seller_estimate)}
+            No disponible
           </strong>
-        </span>
-        {usesAverage && (
-          <small>
-            {average.tariff_band || "SIN_DATOS"} · informativo, no afecta utilidad
-          </small>
         )}
-        {!noCoverage && modalityLabels.length > 0 && (
-          <small>{modalityLabels.join(" · ")}</small>
-        )}
-        <span>
-          <small>Cliente ref.</small>
-          <strong>{noCoverage ? "No disponible" : money(shipping?.buyer_charge)}</strong>
-        </span>
-        {noCoverage && <small>Modalidad logística no configurada</small>}
       </td>
     );
   }
@@ -688,6 +751,7 @@ function ChannelMetricCell({ row, channel, metric, pinned = false }) {
 function ExcelColumnHeader({
   columnKey,
   label,
+  description,
   className = "",
   rowSpan,
   rows,
@@ -791,7 +855,10 @@ function ExcelColumnHeader({
         }}
       >
         <summary aria-label={`Ordenar y filtrar ${label}`}>
-          <span>{label}</span>
+          <span className="excel-header-copy">
+            <span>{label}</span>
+            {description && <small>{description}</small>}
+          </span>
           <b>
             {sortDirection === "asc"
               ? "↑"
@@ -1465,6 +1532,27 @@ export default function CatalogWorkspace({ user }) {
           sort: (row) => channelCommercialFor(row, channel)?.target_value ?? null,
           filter: (row) => channelCommercialFor(row, channel)?.target_label || "Pendiente",
         };
+      if (["reserve", "markup", "suggested", "difference"].includes(metric)) {
+        const fieldByMetric = {
+          reserve: "logistics_reserve_amount",
+          markup: "markup_percent",
+          suggested: "suggested_price",
+          difference: "difference_amount",
+        };
+        const valueFor = (row) =>
+          shopifyPricingSimulationFor(row)?.[fieldByMetric[metric]] ?? null;
+        return {
+          sort: (row) => {
+            const value = valueFor(row);
+            return value == null ? null : Number(value);
+          },
+          filter: (row) => {
+            const value = valueFor(row);
+            if (value == null) return "Sin costo";
+            return metric === "markup" ? percent(value) : money(value);
+          },
+        };
+      }
       if (metric === "shipping")
         return {
           sort: (row) => {
@@ -1494,7 +1582,7 @@ export default function CatalogWorkspace({ user }) {
     };
     const channelDefinitions = Object.fromEntries(
       channelColumns.flatMap(([channel]) =>
-        channelMetrics.map((metric) => [
+        channelMetricsFor(channel).map((metric) => [
           channelMetricColumnKey(channel, metric.key),
           channelMetricDefinition(channel, metric.key),
         ]),
@@ -1830,11 +1918,35 @@ export default function CatalogWorkspace({ user }) {
     shows(metric.visibleKey),
   );
   const metricsForChannel = (channel) => {
-    if (!collapsedChannels.includes(channel)) return visibleChannelMetrics;
-    const statusMetric = visibleChannelMetrics.find(
+    const applicableMetrics = visibleChannelMetrics.filter(
+      (metric) => !metric.channels || metric.channels.includes(channel),
+    );
+    if (!collapsedChannels.includes(channel)) return applicableMetrics;
+    const statusMetric = applicableMetrics.find(
       (metric) => metric.key === "status",
     );
-    return statusMetric ? [statusMetric] : visibleChannelMetrics.slice(0, 1);
+    return statusMetric ? [statusMetric] : applicableMetrics.slice(0, 1);
+  };
+  const metricDescriptionFor = (channel, metric) => {
+    if (metric.key !== "commission") return metric.description;
+    if (!channelUsesCommission(channel)) return "No aplica · venta mayorista";
+    if (channel === "SHOPIFY") {
+      const formula = filteredRows
+        .map((row) => channelCommercialFor(row, channel)?.commission_formula_label)
+        .find(Boolean);
+      return formula ? `${formula} · referencia pública` : "Tarifa Mercado Pago pendiente";
+    }
+    const rates = [
+      ...new Set(
+        filteredRows
+          .map((row) => channelCommercialFor(row, channel)?.commission_percent)
+          .filter((value) => value != null)
+          .map((value) => Number(value)),
+      ),
+    ];
+    if (!rates.length) return "Tarifa pendiente";
+    if (rates.length === 1) return `Tarifa ${percent(rates[0])}`;
+    return "Tarifa variable según producto";
   };
   const toggleChannelCollapsed = (channel) => {
     setCollapsedChannels((current) => {
@@ -2316,6 +2428,11 @@ export default function CatalogWorkspace({ user }) {
                 {" · "}
                 página {workspace.pagination?.page || 1} de{" "}
                 {workspace.pagination?.pages || 1}
+                {loading && (
+                  <strong className="catalog-results-loading" role="status">
+                    Actualizando resultados…
+                  </strong>
+                )}
               </span>
               <div className="view-controls">
                 <select
@@ -2418,7 +2535,15 @@ export default function CatalogWorkspace({ user }) {
               </button>
             </nav>
           )}
-          <div className={`catalog-table-card density-${density}`}>
+          <div
+            className={`catalog-table-card density-${density} ${loading ? "is-refreshing" : ""}`.trim()}
+            aria-busy={loading}
+          >
+            {loading && (
+              <div className="catalog-table-refresh-status" role="status">
+                Aplicando filtros…
+              </div>
+            )}
             <div className="catalog-table-scroll" ref={tableScrollRef}>
               <table>
                 <thead className="channel-table-head">
@@ -2614,7 +2739,8 @@ export default function CatalogWorkspace({ user }) {
                             <ExcelColumnHeader
                               columnKey={key}
                               pinned={pinnedColumn === key}
-                              label={metric.label}
+                              label={channelMetricLabelFor(channel, metric)}
+                              description={metricDescriptionFor(channel, metric)}
                               className={`channel-metric-heading channel-metric-${metric.key}`}
                               key={key}
                               rows={filteredRows}
@@ -2699,7 +2825,7 @@ export default function CatalogWorkspace({ user }) {
                         >
                           <strong>
                             {row.currentShopifyCost == null
-                              ? "—"
+                              ? "Falta costo"
                               : money(row.currentShopifyCost)}
                           </strong>
                         </td>

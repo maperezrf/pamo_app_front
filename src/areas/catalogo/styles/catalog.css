@@ -129,7 +129,10 @@
 .catalog-result-line > span strong { color:#213a52; }
 .view-controls { display:flex; align-items:center; gap:6px; }
 .view-controls select,.view-controls button { height:29px; border:1px solid #cad4cc; border-radius:6px; background:#fff; color:#405047; padding:0 7px; font-size:9px; }
-.catalog-table-card { border:1px solid var(--catalog-line); border-radius:10px; background:#fff; overflow:hidden; }
+.catalog-table-card { position:relative; border:1px solid var(--catalog-line); border-radius:10px; background:#fff; overflow:hidden; }
+.catalog-results-loading { display:inline-flex; margin-left:10px; color:#b94400; }
+.catalog-table-card.is-refreshing .catalog-table-scroll { opacity:.35; pointer-events:none; }
+.catalog-table-refresh-status { position:absolute; top:14px; left:50%; z-index:90; transform:translateX(-50%); border:1px solid #ffb58d; border-radius:999px; background:#fff4ed; padding:7px 13px; color:#9a3900; font-size:10px; font-weight:800; box-shadow:0 8px 20px rgba(7,24,45,.15); }
 .catalog-table-scroll {
   overflow:auto;
   max-height:560px;
@@ -164,6 +167,10 @@
 .catalog-table-card tr.needs-review { background:#fffdf5; }
 .catalog-table-card .sticky-select { width:30px; min-width:30px; background:inherit; }
 .catalog-table-card .sticky-photo { width:64px; min-width:64px; background:inherit; }
+.excel-header-copy { display:grid; min-width:0; gap:2px; text-align:left; }
+.excel-header-copy > small { color:#667b6e; font-size:7px; font-weight:600; letter-spacing:0; line-height:1.2; text-transform:none; white-space:normal; }
+.channel-metric-row .excel-column-menu > summary { min-height:52px; align-items:flex-start; }
+.channel-metric-row .excel-header-copy { max-width:170px; }
 .catalog-table-card .sticky-photo .excel-column-menu { min-width:64px; }
 .catalog-table-card .sticky-sku { width:125px; min-width:125px; background:inherit; }
 .catalog-table-card .sticky-product { min-width:225px; max-width:300px; background:inherit; }
@@ -194,10 +201,15 @@
 .channel-metric-heading.channel-metric-status,.channel-metric-cell.channel-metric-status { min-width:100px; }
 .channel-metric-heading.channel-metric-price,.channel-metric-cell.channel-metric-price { min-width:112px; }
 .channel-metric-heading.channel-metric-commission,.channel-metric-cell.channel-metric-commission { min-width:105px; }
-.channel-metric-heading.channel-metric-costs,.channel-metric-cell.channel-metric-costs { min-width:118px; }
+.channel-metric-heading.channel-metric-costs,.channel-metric-cell.channel-metric-costs { min-width:160px; }
 .channel-metric-heading.channel-metric-profit,.channel-metric-cell.channel-metric-profit { min-width:105px; }
 .channel-metric-heading.channel-metric-target,.channel-metric-cell.channel-metric-target { min-width:105px; }
-.channel-metric-heading.channel-metric-shipping,.channel-metric-cell.channel-metric-shipping { min-width:140px; }
+.channel-metric-heading.channel-metric-reserve,.channel-metric-cell.channel-metric-reserve { min-width:118px; background:#eef7ff; color:#15527c; }
+.channel-metric-heading.channel-metric-markup,.channel-metric-cell.channel-metric-markup { min-width:118px; background:#f4efff; color:#5b3c91; }
+.channel-metric-heading.channel-metric-suggested,.channel-metric-cell.channel-metric-suggested { min-width:128px; background:#e8f6ed; color:#17633c; }
+.channel-metric-heading.channel-metric-difference,.channel-metric-cell.channel-metric-difference { min-width:112px; background:#fff7e8; color:#89500c; }
+.channel-metric-cell.channel-metric-reserve strong,.channel-metric-cell.channel-metric-markup strong,.channel-metric-cell.channel-metric-suggested strong,.channel-metric-cell.channel-metric-difference strong { font-size:10px; }
+.channel-metric-heading.channel-metric-shipping,.channel-metric-cell.channel-metric-shipping { min-width:160px; }
 .channel-metric-heading.channel-metric-quality,.channel-metric-cell.channel-metric-quality { min-width:80px; }
 .channel-metric-heading.channel-metric-missing,.channel-metric-cell.channel-metric-missing { min-width:180px; }
 .channel-metric-cell { border-left:1px solid #edf1ee; text-align:center!important; vertical-align:middle; }
@@ -209,6 +221,7 @@
 .channel-metric-shipping > span { display:grid; grid-template-columns:45px 1fr; align-items:center; gap:4px; text-align:left; }
 .channel-metric-shipping > span + span { margin-top:4px; }
 .channel-metric-shipping > span small { margin:0; }
+.channel-metric-shipping > .shipping-value-stack { display:grid; grid-template-columns:1fr; gap:3px; text-align:center; }
 .channel-metric-missing { white-space:normal!important; }
 .channel-metric-missing small { max-width:180px; line-height:1.35; }
 .product-link { display:flex; align-items:center; gap:8px; width:100%; border:0; background:transparent; padding:0; text-align:left; color:inherit; cursor:pointer; }
