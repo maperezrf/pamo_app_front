@@ -523,9 +523,16 @@ export default function OrdersWorkspace({ user }) {
                 <span>{item.state === "disabled_local" ? "Aislada en local" : integrationStateLabels[item.state] || item.state}</span>
                 <small>{item.records_observed} registro(s) observado(s)</small>
                 {item.provider === "sodimac" && item.details?.viaShopify > 0 && (
-                  <small>
-                    Operación vigente vía Shopify: {item.details.viaShopify} · último pedido: {formatStatusDate(item.details.latestBusinessOrderAt)}
-                  </small>
+                  <>
+                    <small>
+                      Operación vigente vía Shopify: {item.details.viaShopify} · último pedido: {formatStatusDate(item.details.latestBusinessOrderAt)}
+                    </small>
+                    {item.details?.sourceChannelOrders > 0 && (
+                      <small>
+                        Las fuentes pueden superponerse; no se ocultan históricos sin un número OC exacto.
+                      </small>
+                    )}
+                  </>
                 )}
                 {item.details?.latestSyncAt && (
                   <small>
