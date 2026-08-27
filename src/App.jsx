@@ -18,6 +18,7 @@ export default function App() {
   const [menu, setMenu] = useState([]);
   const [bootstrapError, setBootstrapError] = useState("");
   const navigate = useNavigate();
+  const localDemoEnabled = import.meta.env.VITE_LOCAL_DEMO_AUTH === "true";
 
   const loadMenu = () => {
     api.menu().then(({ ok, data }) => {
@@ -79,14 +80,14 @@ export default function App() {
         path="/login"
         element={
           authed ? (
-            <Navigate to="/" replace />
+            <Navigate to={localDemoEnabled ? "/ventas/pedidos" : "/"} replace />
           ) : (
             <Login
-              onAuthorized={(loggedUser) => {
+              onAuthorized={(loggedUser, options = {}) => {
                 setUser(loggedUser);
                 setAuthed(true);
                 loadMenu();
-                navigate("/");
+                navigate(options.destination ?? "/");
               }}
               onUnauthorized={() => navigate("/unauthorized")}
             />
