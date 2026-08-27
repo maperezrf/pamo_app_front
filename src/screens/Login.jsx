@@ -24,6 +24,16 @@ export default function Login({ onAuthorized, onUnauthorized }) {
     setError("No se pudo iniciar sesión. Intentá de nuevo.");
   };
 
+  const handleLocalDemo = async () => {
+    setError(null);
+    const { ok, data } = await api.loginLocalDemo();
+    if (ok && data?.authorized) {
+      onAuthorized(data.user);
+      return;
+    }
+    setError("No se pudo abrir el entorno local. Ejecuta la preparación de datos.");
+  };
+
   return (
     <div className="card">
       <h1>Pamo</h1>
@@ -34,6 +44,11 @@ export default function Login({ onAuthorized, onUnauthorized }) {
           onError={() => setError("Google no pudo completar el inicio de sesión.")}
         />
       </div>
+      {import.meta.env.VITE_LOCAL_DEMO_AUTH === "true" && (
+        <button type="button" className="local-demo-login" onClick={handleLocalDemo}>
+          Entrar al entorno local controlado
+        </button>
+      )}
       {error && <p className="error-text">{error}</p>}
     </div>
   );

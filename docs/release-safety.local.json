@@ -1,0 +1,17 @@
+{
+  "repo": ".",
+  "profile": "orders-ui",
+  "environment": "local-controlado",
+  "service": "pamo-app-orders-local-ui",
+  "test_commands": [
+    ["npm", "run", "lint"],
+    ["npm", "run", "build"]
+  ],
+  "url_checks": [
+    {
+      "url": "http://127.0.0.1:5175/",
+      "allowed_status": [200]
+    }
+  ]
+}
+

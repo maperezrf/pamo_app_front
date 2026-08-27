@@ -23,6 +23,12 @@ function ensureCsrfToken() {
   return csrfRequest;
 }
 
+export async function refreshCsrfToken() {
+  csrfToken = null;
+  csrfRequest = null;
+  return ensureCsrfToken();
+}
+
 httpClient.interceptors.request.use(async (config) => {
   if (config.method?.toLowerCase() === "get") return config;
 

@@ -1,4 +1,4 @@
-import httpClient from "./lib/httpClient";
+import httpClient, { refreshCsrfToken } from "./lib/httpClient";
 
 async function request(path, { method = "GET", body } = {}) {
   try {
@@ -14,10 +14,25 @@ async function request(path, { method = "GET", body } = {}) {
 
 export const api = {
   fetchCsrfCookie: () => request("/api/auth/csrf/"),
-  loginWithGoogle: (credential) =>
-    request("/api/auth/google/", { method: "POST", body: { credential } }),
+  loginWithGoogle: async (credential) => {
+    const result = await request("/api/auth/google/", {
+      method: "POST",
+      body: { credential },
+    });
+    if (result.ok) await refreshCsrfToken();
+    return result;
+  },
+  loginLocalDemo: async () => {
+    const result = await request("/api/auth/local-demo/", { method: "POST" });
+    if (result.ok) await refreshCsrfToken();
+    return result;
+  },
   me: () => request("/api/auth/me/"),
-  logout: () => request("/api/auth/logout/", { method: "POST" }),
+  logout: async () => {
+    const result = await request("/api/auth/logout/", { method: "POST" });
+    if (result.ok) await refreshCsrfToken();
+    return result;
+  },
   menu: () => request("/api/auth/menu/"),
   pingAdmin: () => request("/api/auth/ping-admin/"),
   listarPrototipos: () => request("/api/tracking/prototipos/admin/"),

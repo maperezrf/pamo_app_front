@@ -8,12 +8,16 @@ import Unauthorized from "./screens/Unauthorized";
 import AppShell from "./shared/layout/AppShell";
 import RemittancesOperationsScreen from "./areas/remittances/screens/RemittancesOperationsScreen";
 import RemittanceAccountingScreen from "./areas/remittances/screens/RemittanceAccountingScreen";
+import OrdersWorkspace from "./areas/pedidos/screens/OrdersWorkspace";
+import SalesDashboard from "./areas/pedidos/screens/SalesDashboard";
+import "./areas/pedidos/styles/orders.css";
 
 // authed: null = verificando sesión, false = sin sesión, true = con sesión
 export default function App() {
   const [authed, setAuthed] = useState(null);
   const [user, setUser] = useState(null);
   const [menu, setMenu] = useState([]);
+  const [bootstrapError, setBootstrapError] = useState("");
   const navigate = useNavigate();
 
   const loadMenu = () => {
@@ -22,9 +26,12 @@ export default function App() {
     });
   };
 
-  useEffect(() => {
-    api.fetchCsrfCookie().then(() => {
-      api.me().then(({ ok, data }) => {
+  const bootstrap = () => {
+    setBootstrapError("");
+    setAuthed(null);
+    api.fetchCsrfCookie()
+      .then(() => api.me())
+      .then(({ ok, data }) => {
         if (ok) {
           setUser(data);
           setAuthed(true);
@@ -32,8 +39,15 @@ export default function App() {
         } else {
           setAuthed(false);
         }
+      })
+      .catch(() => {
+        setBootstrapError("No fue posible conectar con el backend local.");
+        setAuthed(false);
       });
-    });
+  };
+
+  useEffect(() => {
+    bootstrap();
   }, []);
 
   const handleLogout = async () => {
@@ -46,6 +60,18 @@ export default function App() {
 
   if (authed === null) {
     return <p className="loading-text">Cargando…</p>;
+  }
+
+  if (bootstrapError) {
+    return (
+      <div className="card">
+        <h1>Entorno local no disponible</h1>
+        <p className="subtitle">{bootstrapError}</p>
+        <button type="button" className="local-demo-login" onClick={bootstrap}>
+          Reintentar conexión
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -85,6 +111,8 @@ export default function App() {
         <Route path="/prototipos" element={<Prototipos />} />
         <Route path="/remisiones" element={<RemittancesOperationsScreen />} />
         <Route path="/contabilidad/remisiones" element={<RemittanceAccountingScreen />} />
+        <Route path="/ventas" element={<SalesDashboard />} />
+        <Route path="/ventas/pedidos" element={<OrdersWorkspace user={user} />} />
       </Route>
     </Routes>
   );
