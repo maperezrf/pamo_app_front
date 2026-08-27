@@ -8,6 +8,7 @@ import Unauthorized from "./screens/Unauthorized";
 import AppShell from "./shared/layout/AppShell";
 import RemittancesOperationsScreen from "./areas/remittances/screens/RemittancesOperationsScreen";
 import RemittanceAccountingScreen from "./areas/remittances/screens/RemittanceAccountingScreen";
+import CatalogWorkspace from "./areas/catalogo/screens/CatalogWorkspace";
 
 // authed: null = verificando sesión, false = sin sesión, true = con sesión
 export default function App() {
@@ -85,6 +86,7 @@ export default function App() {
         <Route path="/prototipos" element={<Prototipos />} />
         <Route path="/remisiones" element={<RemittancesOperationsScreen />} />
         <Route path="/contabilidad/remisiones" element={<RemittanceAccountingScreen />} />
+        <Route path="/catalogo-multicanal" element={<CatalogWorkspace user={user} />} />
       </Route>
     </Routes>
   );
