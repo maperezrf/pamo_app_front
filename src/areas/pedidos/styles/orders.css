@@ -1,4 +1,8 @@
 .orders-page {
+  --accent-hover: #243fa8;
+  --accent-soft: #eef1ff;
+  --warning: #8a6011;
+  --warning-soft: #fff6dd;
   display: grid;
   gap: 18px;
   min-width: 0;
