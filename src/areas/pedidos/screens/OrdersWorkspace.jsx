@@ -24,6 +24,13 @@ const channelLabels = {
   sodimac: "Sodimac",
 };
 
+const orderChannelLabel = (order) => {
+  const origin = order?.business_origin || order?.channel;
+  const via = order?.business_origin_via || order?.channel;
+  if (origin === "sodimac" && via === "shopify") return "Sodimac vía Shopify";
+  return channelLabels[origin] || origin;
+};
+
 const integrationStateLabels = {
   connected: "Conectada",
   connected_unverified: "Conectada · pendiente de verificación",
@@ -515,7 +522,16 @@ export default function OrdersWorkspace({ user }) {
                 <strong>{channelLabels[item.provider] || item.provider}</strong>
                 <span>{item.state === "disabled_local" ? "Aislada en local" : integrationStateLabels[item.state] || item.state}</span>
                 <small>{item.records_observed} registro(s) observado(s)</small>
-                {item.details?.latestSyncAt && <small>Origen actualizado: {formatStatusDate(item.details.latestSyncAt)}</small>}
+                {item.provider === "sodimac" && item.details?.viaShopify > 0 && (
+                  <small>
+                    Operación vigente vía Shopify: {item.details.viaShopify} · último pedido: {formatStatusDate(item.details.latestBusinessOrderAt)}
+                  </small>
+                )}
+                {item.details?.latestSyncAt && (
+                  <small>
+                    {item.provider === "sodimac" ? "Fuente directa histórica" : "Origen actualizado"}: {formatStatusDate(item.details.latestSyncAt)}
+                  </small>
+                )}
                 {item.details?.lastCheckAt && <small>Última comprobación: {formatStatusDate(item.details.lastCheckAt)}</small>}
                 {item.provider === "envia" && item.details?.cachedTotal != null && (
                   <small>PDF recuperados: {item.details.cachedTotal} · pendientes: {item.details.unavailable || 0}</small>
@@ -648,7 +664,7 @@ export default function OrdersWorkspace({ user }) {
                     )}
                     {order.shipment_count > 1 && <small>{order.shipment_count} ubicaciones</small>}
                   </td>
-                  <td>{channelLabels[order.channel] || order.channel}</td>
+                  <td>{orderChannelLabel(order)}</td>
                   <td>{new Date(order.placed_at).toLocaleString("es-CO")}</td>
                   <td><strong>{order.customer_name}</strong><small>{order.customer_email || "Sin correo"}</small></td>
                   <td><StackedValue values={order.warehouses} fallback="Sin asignar" /></td>
@@ -692,7 +708,7 @@ export default function OrdersWorkspace({ user }) {
           >
             <header>
               <div>
-                <span>{channelLabels[detail.channel] || detail.channel}</span>
+                <span>{orderChannelLabel(detail)}</span>
                 <h2>{detail.channel_order_id}</h2>
               </div>
               <button type="button" className="icon-action" onClick={() => setDetail(null)}>×</button>
