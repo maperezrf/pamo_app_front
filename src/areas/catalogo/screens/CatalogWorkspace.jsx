@@ -82,6 +82,7 @@ const channelMetrics = [
 const optionalColumns = [
   ["provider", "Proveedor"],
   ["cost", "Costo Shopify sin IVA"],
+  ["shipping", "Precio promedio de envío"],
   ["siigo", "Siigo"],
   ["channels", "Canales"],
   ["channel_status", "Canales · Estado"],
@@ -101,6 +102,7 @@ const pinnableColumns = [
   ["product", "Nombre del producto"],
   ["provider", "Proveedor"],
   ["cost", "Costo Shopify sin IVA"],
+  ["shipping", "Precio promedio de envío"],
   ["siigo", "Siigo"],
   ...channelColumns.flatMap(([channel, channelLabel]) =>
     channelMetrics.map((metric) => [
@@ -348,14 +350,18 @@ const shippingModalityLabels = (shipping) => {
 
 const channelShippingLabel = (row, channel) => {
   const shipping = channelShippingFor(row, channel);
-  if (!shipping) return "Pendiente";
-  const modalityLabels = shippingModalityLabels(shipping);
+  const average = channel === "SHOPIFY" ? row.shipping.average_shipping : null;
+  if (!shipping && average?.amount == null) return "Pendiente";
+  const modalityLabels = shippingModalityLabels(shipping || {});
+  const usesAverage = shipping?.seller_estimate == null && average?.amount != null;
   const seller =
-    shipping.seller_estimate == null
+    usesAverage
+      ? `Promedio estimado ${money(average.amount)}`
+      : shipping?.seller_estimate == null
       ? "Costo preventivo —"
       : `Costo preventivo ${money(shipping.seller_estimate)}`;
   const buyer =
-    shipping.buyer_charge == null
+    shipping?.buyer_charge == null
       ? "Cliente ref. —"
       : `Cliente ref. ${money(shipping.buyer_charge)}`;
   return [seller, ...modalityLabels, buyer].join(" · ");
@@ -418,7 +424,7 @@ const CHANNEL_METRIC_LABELS = {
   costs: "Otros gastos",
   profit: "Utilidad estimada",
   target: "Objetivo",
-  shipping: "Envío",
+  shipping: "Precio promedio de envío",
   quality: "Calidad",
   missing: "Faltantes",
 };
@@ -610,6 +616,9 @@ function ChannelMetricCell({ row, channel, metric, pinned = false }) {
   }
   if (metric === "shipping") {
     const shipping = channelShippingFor(row, channel);
+    const average = channel === "SHOPIFY" ? row.shipping.average_shipping : null;
+    const usesAverage =
+      shipping?.seller_estimate == null && average?.amount != null;
     const modalityLabels = shipping ? shippingModalityLabels(shipping) : [];
     const shippingError = Array.isArray(shipping?.errors)
       ? shipping.errors.find(Boolean)
@@ -625,15 +634,27 @@ function ChannelMetricCell({ row, channel, metric, pinned = false }) {
           noCoverage
             ? "Mercado Libre no encontró cobertura de envío para esta publicación. La modalidad logística figura como no configurada."
             : shippingError ||
+              (usesAverage
+                ? "Promedio informativo de guías realizadas para la banda del producto. No forma parte del costo ni de la utilidad y será reemplazado por la cotización real."
+                : undefined) ||
               (shipping?.seller_estimate_strategy?.startsWith("MAX_ELIGIBLE")
                 ? "Antes de la venta se aplica el mayor valor entre la cotización del SKU y el P75 real de 90 días para las modalidades habilitadas. El costo definitivo se conciliará con la orden."
                 : undefined)
         }
       >
         <span>
-          <small>Costo preventivo</small>
-          <strong>{noCoverage ? "Sin cobertura ML" : money(shipping?.seller_estimate)}</strong>
+          <small>{usesAverage ? "Promedio estimado" : "Costo preventivo"}</small>
+          <strong>
+            {noCoverage
+              ? "Sin cobertura ML"
+              : money(usesAverage ? average.amount : shipping?.seller_estimate)}
+          </strong>
         </span>
+        {usesAverage && (
+          <small>
+            {average.tariff_band || "SIN_DATOS"} · informativo, no afecta utilidad
+          </small>
+        )}
         {!noCoverage && modalityLabels.length > 0 && (
           <small>{modalityLabels.join(" · ")}</small>
         )}
@@ -1448,7 +1469,13 @@ export default function CatalogWorkspace({ user }) {
         return {
           sort: (row) => {
             const shipping = channelShippingFor(row, channel);
-            return shipping?.seller_estimate ?? shipping?.buyer_charge ?? null;
+            return (
+              shipping?.seller_estimate ??
+              shipping?.buyer_charge ??
+              (channel === "SHOPIFY"
+                ? row.shipping.average_shipping?.amount
+                : null)
+            );
           },
           filter: (row) => channelShippingLabel(row, channel),
         };
@@ -1504,6 +1531,13 @@ export default function CatalogWorkspace({ user }) {
       siigo: {
         sort: (row) => (row.siigoCreated ? 1 : 0),
         filter: (row) => (row.siigoCreated ? "CREADO" : "FALTA CREAR"),
+      },
+      shipping: {
+        sort: (row) => row.shipping.average_shipping?.amount ?? null,
+        filter: (row) =>
+          row.shipping.average_shipping?.amount == null
+            ? "Pendiente"
+            : money(row.shipping.average_shipping.amount),
       },
       ...channelDefinitions,
     };
@@ -1597,7 +1631,7 @@ export default function CatalogWorkspace({ user }) {
       margin: "Margen (columna)",
       sodimac: "Sodimac (columna)",
       envia: "Envía (columna)",
-      shipping: "Envío (columna)",
+      shipping: "Precio promedio de envío (columna)",
       quality: "Calidad (columna)",
       missing: "Faltantes (columna)",
     }[key] || key;
@@ -1775,7 +1809,7 @@ export default function CatalogWorkspace({ user }) {
     pinnedColumn === key ? "is-pinned-column" : "";
   const pinOptionVisible = (key) =>
     ["photo", "sku", "product"].includes(key) ||
-    (key === "provider" || key === "cost" || key === "siigo"
+    (["provider", "cost", "shipping", "siigo"].includes(key)
       ? shows(key)
       : pinnableColumns.some(
           ([itemKey, , visibleKey, channel]) =>
@@ -1845,6 +1879,7 @@ export default function CatalogWorkspace({ user }) {
     5 +
     Number(shows("provider")) +
     Number(shows("cost")) +
+    Number(shows("shipping")) +
     Number(shows("siigo")) +
     (shows("channels")
       ? displayedChannelColumns.reduce(
@@ -2492,6 +2527,24 @@ export default function CatalogWorkspace({ user }) {
                         onFilterChange={updateColumnFilter}
                       />
                     )}
+                    {shows("shipping") && (
+                      <ExcelColumnHeader
+                        columnKey="shipping"
+                        pinned={pinnedColumn === "shipping"}
+                        label="Precio promedio de envío"
+                        rowSpan={
+                          shows("channels") && visibleChannelMetrics.length
+                            ? 2
+                            : undefined
+                        }
+                        rows={filteredRows}
+                        definition={excelColumns.shipping}
+                        sortConfig={tableSort}
+                        onSort={updateTableSort}
+                        columnFilters={columnFilters}
+                        onFilterChange={updateColumnFilter}
+                      />
+                    )}
                     {shows("siigo") && (
                       <ExcelColumnHeader
                         columnKey="siigo"
@@ -2649,6 +2702,22 @@ export default function CatalogWorkspace({ user }) {
                               ? "—"
                               : money(row.currentShopifyCost)}
                           </strong>
+                        </td>
+                      )}
+                      {shows("shipping") && (
+                        <td
+                          className={`average-shipping-cell ${pinClass("shipping")}`.trim()}
+                          title="Referencia informativa; no forma parte del costo del producto"
+                        >
+                          <strong>
+                            {row.shipping.average_shipping?.amount == null
+                              ? "—"
+                              : money(row.shipping.average_shipping.amount)}
+                          </strong>
+                          <small>
+                            {row.shipping.average_shipping?.tariff_band || "Sin datos"}
+                            {" · estimado"}
+                          </small>
                         </td>
                       )}
                       {shows("siigo") && (
