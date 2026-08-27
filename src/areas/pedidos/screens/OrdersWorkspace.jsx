@@ -16,12 +16,27 @@ const stateLabels = {
 };
 
 const channelLabels = {
+  pamo_canonical: "Fuente canónica PAMO",
   shopify: "Shopify",
   mercado_libre: "Mercado Libre",
   "mercado-libre": "Mercado Libre",
   falabella: "Falabella",
   sodimac: "Sodimac",
 };
+
+const integrationStateLabels = {
+  connected: "Conectada",
+  connected_unverified: "Conectada · pendiente de verificación",
+  connected_canonical_read_model: "Conectada al modelo canónico",
+  connected_read_only: "Conectada · solo lectura",
+  permission_missing: "Faltan permisos",
+  credential_missing: "Faltan credenciales",
+  read_model_missing: "Modelo canónico no disponible",
+  canonical_labels_read_only: "Etiquetas consultadas · solo lectura",
+};
+
+const formatStatusDate = (value) =>
+  value ? new Date(value).toLocaleString("es-CO") : "Sin lectura registrada";
 
 const defaultTemplate =
   "Hola, {{contacto}}.\n\nEstos son los despachos pendientes de {{bodega}}:\n\n{{lista_pedidos}}\n\nAgradecemos confirmar su estado.";
@@ -498,8 +513,14 @@ export default function OrdersWorkspace({ user }) {
             {integrations.map((item) => (
               <article key={item.provider}>
                 <strong>{channelLabels[item.provider] || item.provider}</strong>
-                <span>{item.state === "disabled_local" ? "Aislada en local" : item.state}</span>
+                <span>{item.state === "disabled_local" ? "Aislada en local" : integrationStateLabels[item.state] || item.state}</span>
                 <small>{item.records_observed} registro(s) observado(s)</small>
+                {item.details?.latestSyncAt && <small>Origen actualizado: {formatStatusDate(item.details.latestSyncAt)}</small>}
+                {item.details?.lastCheckAt && <small>Última comprobación: {formatStatusDate(item.details.lastCheckAt)}</small>}
+                {item.provider === "envia" && item.details?.cachedTotal != null && (
+                  <small>PDF recuperados: {item.details.cachedTotal} · pendientes: {item.details.unavailable || 0}</small>
+                )}
+                {item.last_error_code && <small>Requiere revisión: {item.last_error_code}</small>}
               </article>
             ))}
           </div>
@@ -791,4 +812,3 @@ export default function OrdersWorkspace({ user }) {
     </section>
   );
 }
-
