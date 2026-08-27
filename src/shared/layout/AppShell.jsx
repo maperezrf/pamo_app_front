@@ -9,7 +9,11 @@ export default function AppShell({ user, menu, onLogout }) {
 
   return (
     <div className="app-shell">
-      <Sidebar items={menu} mobileOpen={mobileNavOpen} />
+      <Sidebar
+        items={menu}
+        mobileOpen={mobileNavOpen}
+        onNavigate={() => setMobileNavOpen(false)}
+      />
       {mobileNavOpen && (
         <button
           type="button"

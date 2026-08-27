@@ -1,14 +1,20 @@
 :root {
-  --ink: #1a1f27;
-  --ink-dim: #5b6472;
-  --line: #e2e5ea;
+  --ink: #17211b;
+  --ink-dim: #65726a;
+  --line: #dfe7e2;
   --surface: #ffffff;
-  --ground: #f4f5f7;
-  --accent: #3454d1;
+  --ground: #f2f6f3;
+  --accent: #1f6f4a;
+  --accent-hover: #145538;
+  --accent-soft: #e6f2eb;
+  --sidebar: #16231b;
+  --sidebar-text: #9fc7ad;
+  --warning: #8a6011;
+  --warning-soft: #fff6dd;
   --accent-ink: #ffffff;
   --danger: #b3432f;
   --danger-soft: #f9e7e3;
-  font-family: -apple-system, "Segoe UI", system-ui, Arial, sans-serif;
+  font-family: Geist, -apple-system, "Segoe UI", system-ui, Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -43,8 +49,8 @@ body {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: var(--surface);
-  border-right: 1px solid var(--line);
+  background: var(--sidebar);
+  border-right: 1px solid #263c2f;
   padding: 20px 16px;
   transition: width 0.15s ease;
 }
@@ -75,15 +81,17 @@ body {
   height: 28px;
   flex-shrink: 0;
   border-radius: 8px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-size: 14px;
-  font-weight: 700;
+  background: #f7d477;
+  color: #16231b;
+  font-family: Georgia, serif;
+  font-size: 17px;
+  font-weight: 800;
 }
 
 .sidebar-brand-name {
   font-size: 18px;
   font-weight: 700;
+  color: #ffffff;
 }
 
 .sidebar-nav {
@@ -98,13 +106,13 @@ body {
   padding: 10px 12px;
   border-radius: 8px;
   font-size: 14px;
-  color: var(--ink-dim);
+  color: var(--sidebar-text);
   text-decoration: none;
 }
 
 .sidebar-nav-item.active {
-  background: var(--ground);
-  color: var(--ink);
+  background: #294d39;
+  color: #ffffff;
   font-weight: 600;
 }
 
@@ -120,21 +128,21 @@ body {
   padding: 8px 12px 8px 28px;
   border-radius: 8px;
   font-size: 13px;
-  color: var(--ink-dim);
+  color: var(--sidebar-text);
   text-decoration: none;
 }
 
 .sidebar-nav-subitem.active {
-  background: var(--ground);
-  color: var(--ink);
+  background: #294d39;
+  color: #ffffff;
   font-weight: 600;
 }
 
 .sidebar-collapse-btn {
   align-self: flex-end;
   background: none;
-  border: 1px solid var(--line);
-  color: var(--ink-dim);
+  border: 1px solid #476754;
+  color: var(--sidebar-text);
   width: 28px;
   height: 28px;
   border-radius: 8px;
@@ -143,8 +151,8 @@ body {
 }
 
 .sidebar-collapse-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: #9fc7ad;
+  color: #ffffff;
 }
 
 .sidebar-backdrop {
@@ -352,6 +360,23 @@ button.logout-btn:hover {
 .loading-text {
   color: var(--ink-dim);
   font-size: 14px;
+}
+
+.local-demo-login {
+  width: 100%;
+  margin-top: 16px;
+  min-height: 42px;
+  border: 1px solid var(--accent);
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.local-demo-login:hover {
+  background: #d7eadf;
 }
 
 .data-table-wrap {
