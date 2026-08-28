@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react";
-import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { api } from "./api";
 import Dashboard from "./screens/Dashboard";
 import Login from "./screens/Login";
 import Prototipos from "./screens/Prototipos";
 import Unauthorized from "./screens/Unauthorized";
 import AppShell from "./shared/layout/AppShell";
-import RemittancesOperationsScreen from "./areas/remittances/screens/RemittancesOperationsScreen";
-import RemittanceAccountingScreen from "./areas/remittances/screens/RemittanceAccountingScreen";
+
+const RemittancesOperationsScreen = lazy(() => import("./areas/remittances/screens/RemittancesOperationsScreen"));
+const RecipientRemittanceScreen = lazy(() => import("./areas/remittances/screens/RecipientRemittanceScreen"));
 
 // authed: null = verificando sesión, false = sin sesión, true = con sesión
 export default function App() {
@@ -15,6 +16,8 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [menu, setMenu] = useState([]);
   const navigate = useNavigate();
+  const location = useLocation();
+  const isPublicRecipientRoute = /^\/remisiones\/firmar\/[^/]+\/?$/.test(location.pathname);
 
   const loadMenu = () => {
     api.menu().then(({ ok, data }) => {
@@ -23,6 +26,7 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (isPublicRecipientRoute) return;
     api.fetchCsrfCookie().then(() => {
       api.me().then(({ ok, data }) => {
         if (ok) {
@@ -34,7 +38,7 @@ export default function App() {
         }
       });
     });
-  }, []);
+  }, [isPublicRecipientRoute]);
 
   const handleLogout = async () => {
     await api.logout();
@@ -43,6 +47,17 @@ export default function App() {
     setAuthed(false);
     navigate("/login");
   };
+
+  if (isPublicRecipientRoute) {
+    return (
+      <Routes>
+        <Route
+          path="/remisiones/firmar/:token"
+          element={<Suspense fallback={<div className="loading-text">Abriendo remisión segura…</div>}><RecipientRemittanceScreen /></Suspense>}
+        />
+      </Routes>
+    );
+  }
 
   if (authed === null) {
     return <p className="loading-text">Cargando…</p>;
@@ -83,8 +98,8 @@ export default function App() {
       >
         <Route path="/" element={<Dashboard user={user} />} />
         <Route path="/prototipos" element={<Prototipos />} />
-        <Route path="/remisiones" element={<RemittancesOperationsScreen />} />
-        <Route path="/contabilidad/remisiones" element={<RemittanceAccountingScreen />} />
+        <Route path="/prototipos/remisiones" element={<Suspense fallback={<div className="card">Abriendo Remisiones…</div>}><RemittancesOperationsScreen /></Suspense>} />
+        <Route path="/remisiones" element={<Navigate to="/prototipos/remisiones" replace />} />
       </Route>
     </Routes>
   );
