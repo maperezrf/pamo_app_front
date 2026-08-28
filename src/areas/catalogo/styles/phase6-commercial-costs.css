@@ -1,0 +1,170 @@
+.p6-custom-costs {
+  display: grid;
+  gap: 10px;
+  padding: 15px;
+  border: 1px solid #d6dfd9;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.p6-drive-source {
+  display: grid;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid #cbd8e5;
+  border-radius: 10px;
+  background: #f7f9fc;
+}
+
+.p6-drive-source > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.p6-drive-source h3 { margin: 3px 0 4px; color: #102842; }
+.p6-drive-source p { margin: 0; color: #617287; font-size: 11px; }
+.p6-drive-source > header > a { flex: 0 0 auto; border: 1px solid #c7d4e2; border-radius: 7px; background: #fff; padding: 8px 11px; color: #244762; font-size: 10px; font-weight: 800; text-decoration: none; }
+
+.p6-drive-template-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.p6-drive-template-grid article { display: grid; align-content: start; gap: 9px; min-height: 132px; padding: 12px; border: 1px solid #d5dfe9; border-radius: 8px; background: #fff; }
+.p6-drive-template-grid article > div { display: grid; gap: 2px; }
+.p6-drive-template-grid article strong { color: #17334e; font-size: 12px; }
+.p6-drive-template-grid article span { color: #3c7553; font-size: 9px; font-weight: 800; }
+.p6-drive-template-grid article button { align-self: end; justify-self: start; border: 0; border-radius: 7px; background: #ff650f; padding: 7px 10px; color: #fff; font-size: 9px; font-weight: 800; cursor: pointer; }
+.p6-drive-template-grid article.is-unavailable { background: #f3f5f7; }
+.p6-drive-template-grid article.is-unavailable span { color: #7b8795; }
+.p6-drive-template-grid article button:disabled { background: #d8dde3; color: #77828e; cursor: not-allowed; }
+.p6-source-trace { display: grid; gap: 3px; padding: 10px 12px; border-left: 4px solid #ff650f; border-radius: 6px; background: #fff5ee; }
+.p6-source-trace span,.p6-source-trace small { color: #6d5b50; font-size: 10px; }
+
+.p6-custom-costs > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.p6-custom-costs small {
+  color: #65746c;
+}
+
+.p6-custom-cost-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) minmax(160px, 1fr) minmax(120px, .7fr) auto;
+  gap: 8px;
+}
+
+.p6-custom-cost-row input,
+.p6-custom-cost-row select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ccd6cf;
+  border-radius: 9px;
+  background: #fff;
+  padding: 10px 11px;
+  color: #18251d;
+  font: inherit;
+}
+
+.p6-custom-cost-row button {
+  border: 1px solid #cad5ce;
+  border-radius: 9px;
+  background: transparent;
+  color: #44524a;
+  padding: 10px 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.p6-custom-costs > button {
+  justify-self: start;
+  border: 0;
+  border-radius: 9px;
+  background: #e7f0ea;
+  color: #24563a;
+  padding: 10px 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.p6-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.p6-scope-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid #c8ddcf;
+  border-radius: 12px;
+  background: #f2f8f4;
+}
+
+.p6-scope-summary > div {
+  display: grid;
+  gap: 4px;
+}
+
+.p6-scope-summary span {
+  color: #506259;
+  font-size: 12px;
+}
+
+.p6-scope-summary button {
+  flex: 0 0 auto;
+  border: 1px solid #bfcfc4;
+  border-radius: 8px;
+  background: #fff;
+  color: #31513d;
+  padding: 8px 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.p6-scope-grid {
+  padding: 15px;
+  border: 1px solid #dbe4de;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.p6-advanced-filters {
+  border: 1px solid #dbe4de;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.p6-advanced-filters summary {
+  padding: 13px 15px;
+  color: #365545;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.p6-advanced-filters > div {
+  padding: 0 15px 15px;
+}
+
+@media (max-width: 760px) {
+  .p6-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .p6-scope-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .p6-custom-cost-row {
+    grid-template-columns: 1fr;
+  }
+
+  .p6-custom-cost-row button {
+    justify-self: start;
+  }
+
+  .p6-drive-source > header { display: grid; }
+  .p6-drive-template-grid { grid-template-columns: 1fr; }
+}

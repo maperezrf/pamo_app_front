@@ -8,6 +8,7 @@
     "build": "vite build",
     "start": "serve -s dist -l $PORT",
     "lint": "oxlint",
+    "test:whatsapp": "node --test tests/whatsapp-platform.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

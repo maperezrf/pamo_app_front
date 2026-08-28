@@ -1,0 +1,16 @@
+{
+  "repo": ".",
+  "profile": "shared+orders+catalog-ui",
+  "environment": "local-integrado",
+  "service": "pamo-app-local-integrated-ui",
+  "test_commands": [
+    ["npm", "run", "lint"],
+    ["npm", "run", "build"]
+  ],
+  "url_checks": [
+    {
+      "url": "http://localhost:5176/",
+      "allowed_status": [200]
+    }
+  ]
+}

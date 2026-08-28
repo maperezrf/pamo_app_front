@@ -1,0 +1,17 @@
+{
+  "repo": ".",
+  "profile": "shared+orders+integrations+release-safety",
+  "environment": "whatsapp-local-controlado",
+  "service": "pamo-app-whatsapp-local-front",
+  "test_commands": [
+    ["npm", "run", "test:whatsapp"],
+    ["npm", "run", "lint"],
+    ["npm", "run", "build"]
+  ],
+  "url_checks": [
+    {
+      "url": "http://127.0.0.1:5180/ventas/pedidos",
+      "allowed_status": [200]
+    }
+  ]
+}

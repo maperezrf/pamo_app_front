@@ -4,7 +4,7 @@ import BrandMark from "./BrandMark";
 
 const COLLAPSED_STORAGE_KEY = "pamo-app-sidebar-collapsed";
 
-export default function Sidebar({ items = [], mobileOpen }) {
+export default function Sidebar({ items = [], mobileOpen, onNavigate }) {
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem(COLLAPSED_STORAGE_KEY) === "1",
   );
@@ -30,6 +30,7 @@ export default function Sidebar({ items = [], mobileOpen }) {
           <div key={item.key} className="sidebar-nav-group">
             <NavLink
               to={item.path}
+              onClick={onNavigate}
               end={item.path === "/"}
               className={({ isActive }) =>
                 `sidebar-nav-item${isActive ? " active" : ""}`
@@ -43,6 +44,7 @@ export default function Sidebar({ items = [], mobileOpen }) {
                   <NavLink
                     key={submodulo.key}
                     to={submodulo.path}
+                    onClick={onNavigate}
                     className={({ isActive }) =>
                       `sidebar-nav-subitem${isActive ? " active" : ""}`
                     }

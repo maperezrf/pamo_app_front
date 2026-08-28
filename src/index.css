@@ -354,6 +354,23 @@ button.logout-btn:hover {
   font-size: 14px;
 }
 
+.local-demo-login {
+  width: 100%;
+  margin-top: 16px;
+  min-height: 42px;
+  border: 1px solid var(--accent);
+  border-radius: 9px;
+  background: #eef1ff;
+  color: #243fa8;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.local-demo-login:hover {
+  background: #e1e6ff;
+}
+
 .data-table-wrap {
   background: var(--surface);
   border: 1px solid var(--line);
