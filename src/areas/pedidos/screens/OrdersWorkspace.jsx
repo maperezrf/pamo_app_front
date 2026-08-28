@@ -47,6 +47,7 @@ const formatStatusDate = (value) =>
 
 const defaultTemplate =
   "Hola, {{contacto}}.\n\nEstos son los despachos pendientes de {{bodega}}:\n\n{{lista_pedidos}}\n\nAgradecemos confirmar su estado.";
+const AUTO_REFRESH_MS = 5 * 60 * 1000;
 
 const emptyConfig = {
   warehouse_id: "",
@@ -130,8 +131,8 @@ export default function OrdersWorkspace({ user }) {
     [search, guide, channel, from, to, page],
   );
 
-  const loadOrders = useCallback(async () => {
-    setLoading(true);
+  const loadOrders = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError("");
     try {
       const payload = await ordersApi.list(query);
@@ -144,14 +145,11 @@ export default function OrdersWorkspace({ user }) {
       if (cached) {
         setOrders(cached.orders || []);
         setTotal(cached.total || 0);
-        setStale(true);
-      } else {
-        setOrders([]);
-        setTotal(0);
       }
+      setStale(true);
       setError(reason.message);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [query, user]);
 
@@ -178,6 +176,16 @@ export default function OrdersWorkspace({ user }) {
   useEffect(() => {
     loadSupportData();
   }, [loadSupportData]);
+
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== "visible" || saving) return;
+      void loadOrders(true);
+      void loadSupportData();
+    };
+    const timer = window.setInterval(refresh, AUTO_REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, [loadOrders, loadSupportData, saving]);
 
   useEffect(() => {
     const next = new URLSearchParams();
@@ -327,7 +335,7 @@ export default function OrdersWorkspace({ user }) {
         <div>
           <p className="eyebrow">VENTAS</p>
           <h1>Pedidos</h1>
-          <p>Operación local controlada, sin llamadas ni escrituras externas.</p>
+          <p>Actualización local automática cada 5 minutos, sin escrituras externas.</p>
         </div>
         <span className="local-safety-pill">externalWrites: 0</span>
       </header>
@@ -335,7 +343,7 @@ export default function OrdersWorkspace({ user }) {
       {stale && (
         <div className="orders-alert warning">
           Vista de contingencia: se muestran los últimos datos locales por un máximo de 15 minutos.
-          <button type="button" onClick={loadOrders}>Reintentar ahora</button>
+          <button type="button" onClick={() => loadOrders()}>Reintentar ahora</button>
         </div>
       )}
       {error && <div className="orders-alert error">{error}</div>}
