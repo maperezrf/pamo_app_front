@@ -9,6 +9,8 @@ import AppShell from "./shared/layout/AppShell";
 import CatalogWorkspace from "./areas/catalogo/screens/CatalogWorkspace";
 import OrdersWorkspace from "./areas/pedidos/screens/OrdersWorkspace";
 import SalesDashboard from "./areas/pedidos/screens/SalesDashboard";
+import WhatsAppSettings from "./areas/communications/WhatsAppSettings";
+import "./areas/communications/whatsapp-settings.css";
 import "./areas/pedidos/styles/orders.css";
 
 // authed: null = verificando sesión, false = sin sesión, true = con sesión
@@ -112,6 +114,7 @@ export default function App() {
         <Route path="/catalogo-multicanal" element={<CatalogWorkspace user={user} />} />
         <Route path="/ventas" element={<SalesDashboard />} />
         <Route path="/ventas/pedidos" element={<OrdersWorkspace user={user} />} />
+        <Route path="/integraciones/whatsapp" element={<WhatsAppSettings />} />
       </Route>
     </Routes>
   );

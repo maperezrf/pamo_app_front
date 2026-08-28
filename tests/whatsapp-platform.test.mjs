@@ -5,6 +5,8 @@ import test from "node:test";
 
 const apiUrl = new URL("../src/areas/communications/api.js", import.meta.url);
 const panelUrl = new URL("../src/areas/communications/WhatsAppCloudPanel.jsx", import.meta.url);
+const settingsUrl = new URL("../src/areas/communications/WhatsAppSettings.jsx", import.meta.url);
+const appUrl = new URL("../src/App.jsx", import.meta.url);
 const ordersUrl = new URL("../src/areas/pedidos/screens/OrdersWorkspace.jsx", import.meta.url);
 
 
@@ -14,6 +16,7 @@ test("el frontend usa únicamente la API propia y nunca recibe secretos Meta", a
     readFile(panelUrl, "utf8"),
   ]);
   assert.match(api, /\/api\/communications\/whatsapp\/capabilities\//);
+  assert.match(api, /\/api\/communications\/whatsapp\/settings\//);
   assert.match(api, /\/api\/communications\/whatsapp\/drafts\//);
   assert.match(api, /\/dispatch\//);
   assert.doesNotMatch(`${api}\n${panel}`, /META_(APP_SECRET|SYSTEM_USER_TOKEN|WABA_ID|PHONE_NUMBER_ID)/);
@@ -44,7 +47,19 @@ test("WhatsApp Web manual se conserva y se bloquea en contingencia", async () =>
   const orders = await readFile(ordersUrl, "utf8");
   assert.match(orders, /Preparar WhatsApp Web \(manual\)/);
   assert.match(orders, /disabled=\{!selected\.length \|\| stale \|\| saving === "whatsapp"\}/);
-  assert.match(orders, /<WhatsAppCloudPanel/);
-  assert.match(orders, /stale=\{stale\}/);
+  assert.doesNotMatch(orders, /WhatsAppCloudPanel/);
 });
 
+
+test("la configuración vive fuera de Pedidos y nunca solicita secretos", async () => {
+  const [settings, app] = await Promise.all([
+    readFile(settingsUrl, "utf8"),
+    readFile(appUrl, "utf8"),
+  ]);
+  assert.match(app, /path="\/integraciones\/whatsapp"/);
+  assert.match(settings, /Configuración básica/);
+  assert.match(settings, /Los secretos nunca se ingresan aquí/);
+  assert.doesNotMatch(settings, /type="password"/);
+  assert.match(settings, /Vincular con Meta · siguiente fase/);
+  assert.match(settings, /disabled title="Requiere autorización/);
+});

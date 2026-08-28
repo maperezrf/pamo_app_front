@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { authenticatedDocumentUrl, ordersApi } from "../api";
-import WhatsAppCloudPanel from "../../communications/WhatsAppCloudPanel";
 
 
 const stateLabels = {
@@ -627,13 +626,6 @@ export default function OrdersWorkspace({ user }) {
             <button type="button" className="secondary-action" onClick={saveCurrentFilter}>Guardar vista</button>
           </div>
         </div>
-
-        <WhatsAppCloudPanel
-          selected={selected}
-          stale={stale}
-          onError={setError}
-          onNotice={setNotice}
-        />
 
         {followups.length > 0 && (
           <div className="prepared-messages">

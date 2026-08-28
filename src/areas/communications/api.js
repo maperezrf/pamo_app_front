@@ -20,6 +20,9 @@ async function request(path, options = {}) {
 
 
 export const communicationsApi = {
+  settings: () => request("/api/communications/whatsapp/settings/"),
+  saveSettings: (data) =>
+    request("/api/communications/whatsapp/settings/", { method: "PUT", data }),
   capabilities: () => request("/api/communications/whatsapp/capabilities/"),
   recipients: (shipmentIds) =>
     request("/api/communications/whatsapp/recipients/", {
@@ -40,4 +43,3 @@ export const communicationsApi = {
       method: "POST",
     }),
 };
-
