@@ -49,6 +49,14 @@ export const ordersApi = {
       data,
     });
   },
+  simulateSupplierResponse: (shipmentId, action) =>
+    request(`/api/pedidos/shipments/${shipmentId}/supplier-response/simulate/`, {
+      method: "POST",
+      data: {
+        action,
+        event_id: `local-ui:${shipmentId}:${action}:${crypto.randomUUID()}`,
+      },
+    }),
   messagingConfigs: () => request("/api/pedidos/messaging/configs/"),
   saveMessagingConfig: (data) =>
     request("/api/pedidos/messaging/configs/", { method: "PUT", data }),
@@ -71,4 +79,3 @@ export const authenticatedDocumentUrl = (path) => {
   const base = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") || "";
   return `${base}${path}`;
 };
-

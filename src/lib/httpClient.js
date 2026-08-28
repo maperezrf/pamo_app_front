@@ -1,6 +1,11 @@
 import axios from "axios";
 
 const CSRF_PATH = "/api/auth/csrf/";
+const AUTH_PATHS_THAT_ROTATE_CSRF = new Set([
+  "/api/auth/google/",
+  "/api/auth/local-demo/",
+  "/api/auth/logout/",
+]);
 
 let csrfToken = null;
 let csrfRequest = null;
@@ -42,6 +47,9 @@ httpClient.interceptors.request.use(async (config) => {
 httpClient.interceptors.response.use((response) => {
   if (response.config.url === CSRF_PATH && response.data?.csrftoken) {
     csrfToken = response.data.csrftoken;
+  }
+  if (AUTH_PATHS_THAT_ROTATE_CSRF.has(response.config.url)) {
+    csrfToken = null;
   }
   return response;
 });

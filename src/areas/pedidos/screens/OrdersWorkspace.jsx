@@ -15,6 +15,21 @@ const stateLabels = {
   logistically_cancelled: "Cancelado",
 };
 
+const supplierStateLabels = {
+  pending_response: "Pendiente de respuesta",
+  received: "Pedido recibido",
+  ready_for_guide: "Listo para guia",
+  issue_reported: "Novedad reportada",
+};
+
+const guideDeliveryLabels = {
+  not_requested: "Guia no solicitada",
+  requested: "Guia solicitada · pendiente",
+  ready_to_send: "Guia lista para enviar",
+  sent: "Guia enviada",
+  failed: "Fallo al enviar guia",
+};
+
 const channelLabels = {
   pamo_canonical: "Fuente canónica PAMO",
   shopify: "Shopify",
@@ -286,6 +301,21 @@ export default function OrdersWorkspace({ user }) {
       setNotice("Guía privada cargada correctamente.");
     } catch (reason) {
       setError(reason.data?.file?.[0] || reason.message);
+    } finally {
+      setSaving("");
+    }
+  };
+
+  const simulateSupplierResponse = async (shipment, action) => {
+    setSaving(`supplier-${shipment.id}`);
+    setError("");
+    try {
+      await ordersApi.simulateSupplierResponse(shipment.id, action);
+      await openOrder(detail.id);
+      await loadOrders();
+      setNotice("Respuesta de proveedor simulada localmente. No se envio ningun WhatsApp.");
+    } catch (reason) {
+      setError(reason.message);
     } finally {
       setSaving("");
     }
@@ -672,15 +702,16 @@ export default function OrdersWorkspace({ user }) {
                 <th>Costo envío</th>
                 <th>Transportadora</th>
                 <th>Guía</th>
+                <th>Proveedor</th>
                 <th>Trazabilidad</th>
               </tr>
             </thead>
             <tbody>
               {loading && !orders.length && (
-                <tr><td colSpan="12" className="empty-table">Cargando pedidos…</td></tr>
+                <tr><td colSpan="13" className="empty-table">Cargando pedidos…</td></tr>
               )}
               {!loading && !orders.length && (
-                <tr><td colSpan="12" className="empty-table">Sin pedidos para esta vista.</td></tr>
+                <tr><td colSpan="13" className="empty-table">Sin pedidos para esta vista.</td></tr>
               )}
               {orders.map((order) => (
                 <tr
@@ -735,6 +766,10 @@ export default function OrdersWorkspace({ user }) {
                       trackingNumbers={order.tracking_numbers}
                       statuses={order.label_statuses}
                     />
+                  </td>
+                  <td>
+                    <StackedValue values={arrayValue(order.supplier_states).map((item) => supplierStateLabels[item] || item)} />
+                    {order.open_novelty_count > 0 && <small className="supplier-alert">{order.open_novelty_count} novedad(es) abierta(s)</small>}
                   </td>
                   <td>
                     <span className={statusClass(arrayValue(order.logistics_state)[0])}>
@@ -803,6 +838,23 @@ export default function OrdersWorkspace({ user }) {
                       {stateLabels[shipment.logistics_state] || shipment.logistics_state}
                     </span>
                   </header>
+                  <div className="supplier-response-summary">
+                    <div><span>Proveedor</span><strong>{supplierStateLabels[shipment.supplier_state] || shipment.supplier_state}</strong></div>
+                    <div><span>Guia por WhatsApp</span><strong>{guideDeliveryLabels[shipment.guide_delivery_state] || shipment.guide_delivery_state}</strong></div>
+                  </div>
+                  <div className="supplier-simulator" aria-label="Simular respuesta del proveedor">
+                    <span>Prueba local · no envia mensajes</span>
+                    <div>
+                      <button type="button" disabled={saving === `supplier-${shipment.id}`} onClick={() => simulateSupplierResponse(shipment, "order_received")}>Pedido recibido</button>
+                      <button type="button" disabled={saving === `supplier-${shipment.id}`} onClick={() => simulateSupplierResponse(shipment, "request_guide")}>Listo, enviar guia</button>
+                      <button type="button" disabled={saving === `supplier-${shipment.id}`} onClick={() => simulateSupplierResponse(shipment, "report_issue")}>Reportar novedad</button>
+                    </div>
+                  </div>
+                  {shipment.novelties?.filter((item) => item.state === "open").map((novelty) => (
+                    <div className="supplier-novelty" key={novelty.id}>
+                      <strong>Novedad del proveedor</strong><span>{novelty.detail}</span>
+                    </div>
+                  ))}
                   <div className="shipment-fields">
                     <label>
                       Bodega
