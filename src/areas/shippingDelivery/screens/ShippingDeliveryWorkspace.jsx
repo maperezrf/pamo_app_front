@@ -158,6 +158,85 @@ export default function ShippingDeliveryWorkspace({ user }) {
 
       {error && <div className="shipping-error" role="alert">{error}</div>}
 
+      <section className="shipping-control-panel">
+        <header>
+          <div>
+            <span className="shipping-kicker">Configuración vigente</span>
+            <h2>Así funciona el motor de envíos</h2>
+            <p>Reglas simples y verificables para saber qué se calcula, cuándo se usa Envía y cuándo entra el respaldo histórico.</p>
+          </div>
+          <span className="shipping-readonly-badge">Solo lectura · externalWrites=0</span>
+        </header>
+        <div className="shipping-engine-rules">
+          {workspace?.engine_configuration?.map((rule) => (
+            <article key={rule.key}>
+              <small>{rule.label}</small>
+              <strong>{rule.value}</strong>
+              <span>{rule.detail}</span>
+            </article>
+          ))}
+        </div>
+        <div className="shipping-readiness-strip">
+          <article><small>Productos con inventario</small><strong>{workspace?.readiness?.variants_with_positive_stock ?? "—"}</strong></article>
+          <article><small>Paquete completo</small><strong>{workspace?.readiness?.package_complete ?? "—"}</strong></article>
+          <article><small>Cotización de ruta vigente</small><strong>{workspace?.readiness?.current_route_quotes ?? "—"}</strong></article>
+          <p>{workspace?.readiness?.note}</p>
+        </div>
+      </section>
+
+      <section className="shipping-control-panel shipping-connections-panel">
+        <header>
+          <div>
+            <span className="shipping-kicker">Estado e historial</span>
+            <h2>Shopify y Envía</h2>
+            <p>El estado cambia con evidencia real; una conexión antigua o incompleta nunca se muestra como saludable.</p>
+          </div>
+          <button type="button" className="shipping-text-button" onClick={loadWorkspace} disabled={loading}>
+            {loading ? "Verificando…" : "Actualizar estado"}
+          </button>
+        </header>
+        <div className="shipping-connector-grid">
+          {workspace?.connections?.map((connection) => (
+            <article className={`shipping-connector is-${String(connection.status || "disconnected").toLowerCase()}`} key={connection.system}>
+              <div>
+                <strong>{connection.label}</strong>
+                <span className="shipping-connector-state">{connection.status_label}</span>
+              </div>
+              <p>{connection.purpose}</p>
+              <dl>
+                <div><dt>Último intento</dt><dd>{localDate(connection.last_attempt_at)}</dd></div>
+                <div><dt>Último éxito</dt><dd>{localDate(connection.last_success_at)}</dd></div>
+                <div><dt>Registros</dt><dd>{connection.record_count ?? "—"}</dd></div>
+                <div><dt>Escrituras externas</dt><dd>{connection.external_writes ?? 0}</dd></div>
+              </dl>
+              <small>{connection.strategy}</small>
+              {connection.blockers?.length > 0 && (
+                <details>
+                  <summary>{connection.blockers.length} condición(es) pendiente(s)</summary>
+                  {connection.blockers.map((blocker) => <p key={blocker.capability}>{blocker.message}</p>)}
+                </details>
+              )}
+            </article>
+          ))}
+        </div>
+        <p className="shipping-monitor-note">{workspace?.monitoring?.plain_note}</p>
+        <div className="shipping-history">
+          <h3>Últimas comprobaciones</h3>
+          <div>
+            {workspace?.connection_history?.slice(0, 12).map((event, index) => (
+              <article key={`${event.system}-${event.created_at}-${index}`}>
+                <span className={`shipping-history-dot is-${String(event.status || "unknown").toLowerCase()}`} />
+                <div>
+                  <strong>{event.system} · {event.action?.replaceAll("_", " ")}</strong>
+                  <p>{event.message || "Comprobación registrada"}</p>
+                </div>
+                <time>{localDate(event.created_at)}</time>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <div className="shipping-summary-grid">
         <article>
           <small>Opción al cliente</small>
