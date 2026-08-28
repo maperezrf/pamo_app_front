@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { api } from "./api";
 import Dashboard from "./screens/Dashboard";
 import Login from "./screens/Login";
@@ -14,6 +14,9 @@ import ShippingDeliveryWorkspace from "./areas/shippingDelivery/screens/Shipping
 import "./areas/communications/whatsapp-settings.css";
 import "./areas/pedidos/styles/orders.css";
 
+const RemittancesOperationsScreen = lazy(() => import("./areas/remittances/screens/RemittancesOperationsScreen"));
+const RecipientRemittanceScreen = lazy(() => import("./areas/remittances/screens/RecipientRemittanceScreen"));
+
 // authed: null = verificando sesión, false = sin sesión, true = con sesión
 export default function App() {
   const [authed, setAuthed] = useState(null);
@@ -21,15 +24,18 @@ export default function App() {
   const [menu, setMenu] = useState([]);
   const [bootstrapError, setBootstrapError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const localDemoEnabled = import.meta.env.VITE_LOCAL_DEMO_AUTH === "true";
+  const isPublicRecipientRoute = /^\/remisiones\/firmar\/[^/]+\/?$/.test(location.pathname);
 
-  const loadMenu = () => {
+  const loadMenu = useCallback(() => {
     api.menu().then(({ ok, data }) => {
       if (ok) setMenu(data);
     });
-  };
+  }, []);
 
-  const bootstrap = () => {
+  const bootstrap = useCallback(() => {
+    if (isPublicRecipientRoute) return;
     setBootstrapError("");
     setAuthed(null);
     api.fetchCsrfCookie()
@@ -47,11 +53,11 @@ export default function App() {
         setBootstrapError("No fue posible conectar con el backend local.");
         setAuthed(false);
       });
-  };
+  }, [isPublicRecipientRoute, loadMenu]);
 
   useEffect(() => {
     bootstrap();
-  }, []);
+  }, [bootstrap]);
 
   const handleLogout = async () => {
     await api.logout();
@@ -60,6 +66,17 @@ export default function App() {
     setAuthed(false);
     navigate("/login");
   };
+
+  if (isPublicRecipientRoute) {
+    return (
+      <Routes>
+        <Route
+          path="/remisiones/firmar/:token"
+          element={<Suspense fallback={<div className="loading-text">Abriendo remisión segura…</div>}><RecipientRemittanceScreen /></Suspense>}
+        />
+      </Routes>
+    );
+  }
 
   if (authed === null) {
     return <p className="loading-text">Cargando…</p>;
@@ -117,6 +134,8 @@ export default function App() {
         <Route path="/ventas/pedidos" element={<OrdersWorkspace user={user} />} />
         <Route path="/integraciones/whatsapp" element={<WhatsAppSettings />} />
         <Route path="/envios-entrega" element={<ShippingDeliveryWorkspace user={user} />} />
+        <Route path="/prototipos/remisiones" element={<Suspense fallback={<div className="card">Abriendo Remisiones…</div>}><RemittancesOperationsScreen /></Suspense>} />
+        <Route path="/remisiones" element={<Navigate to="/prototipos/remisiones" replace />} />
       </Route>
     </Routes>
   );
