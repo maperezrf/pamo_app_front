@@ -369,6 +369,27 @@
 .stacked-value { display: grid; gap: 3px; }
 .stacked-value > span { line-height: 1.25; }
 
+.guide-stack { display: grid; gap: 5px; }
+.guide-stack > span { display: grid; gap: 3px; justify-items: start; }
+.guide-stack b { overflow-wrap: anywhere; font-size: 10px; }
+
+.label-status {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  background: #fff0df;
+  color: #8b4f13;
+  padding: 4px 7px;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.label-available { background: #e5f4eb; color: var(--accent-hover); }
+.label-not_printable { background: #eef2ef; color: #4e5d54; }
+.label-temporary_error { background: #fff0df; color: #8b4f13; }
+
 .status-pill {
   display: inline-flex;
   max-width: 180px;
@@ -482,6 +503,12 @@
 }
 
 .document-actions small { color: var(--ink-dim); font-size: 9px; }
+
+.document-status-copy {
+  display: grid;
+  max-width: 310px;
+  gap: 5px;
+}
 
 .guide-link,
 .upload-guide {

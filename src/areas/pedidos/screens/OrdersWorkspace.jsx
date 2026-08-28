@@ -42,6 +42,20 @@ const integrationStateLabels = {
   canonical_labels_read_only: "Etiquetas consultadas · solo lectura",
 };
 
+const labelStatusLabels = {
+  available: "PDF listo",
+  pending_provider: "PDF pendiente",
+  not_printable: "Full · sin PDF del vendedor",
+  temporary_error: "Reintento automático",
+};
+
+const labelStatusDetails = {
+  available: "El archivo está disponible para consultar y compartir.",
+  pending_provider: "La plataforma todavía no habilita el PDF; se volverá a consultar automáticamente.",
+  not_printable: "Mercado Libre Full prepara el envío desde sus depósitos y no entrega una etiqueta de venta al vendedor.",
+  temporary_error: "La consulta no terminó correctamente. Los datos actuales se conservaron y habrá un nuevo intento automático.",
+};
+
 const formatStatusDate = (value) =>
   value ? new Date(value).toLocaleString("es-CO") : "Sin lectura registrada";
 
@@ -73,6 +87,28 @@ function StackedValue({ values, fallback = "—" }) {
       {(normalized.length ? normalized : [fallback]).map((value, index) => (
         <span key={`${value}-${index}`}>{value || fallback}</span>
       ))}
+    </span>
+  );
+}
+
+function GuideStack({ trackingNumbers, statuses }) {
+  const guides = arrayValue(trackingNumbers);
+  const labelStatuses = arrayValue(statuses);
+  const length = Math.max(guides.length, labelStatuses.length, 1);
+  return (
+    <span className="guide-stack">
+      {Array.from({ length }, (_, index) => {
+        const guide = guides[index] || "Sin guía";
+        const status = labelStatuses[index] || "pending_provider";
+        return (
+          <span key={`${guide}-${status}-${index}`}>
+            <b>{guide}</b>
+            <em className={`label-status label-${status}`}>
+              {labelStatusLabels[status] || "PDF pendiente"}
+            </em>
+          </span>
+        );
+      })}
     </span>
   );
 }
@@ -549,7 +585,14 @@ export default function OrdersWorkspace({ user }) {
                 )}
                 {item.details?.lastCheckAt && <small>Última comprobación: {formatStatusDate(item.details.lastCheckAt)}</small>}
                 {item.provider === "envia" && item.details?.cachedTotal != null && (
-                  <small>PDF recuperados: {item.details.cachedTotal} · pendientes: {item.details.unavailable || 0}</small>
+                  <>
+                    <small>
+                      PDF locales: {item.details.cachedTotal} · pendientes del proveedor: {item.details.pendingProvider || 0}
+                    </small>
+                    <small>
+                      Full sin PDF imprimible: {item.details.notPrintable || 0} · reintentos técnicos: {item.details.temporaryError || 0}
+                    </small>
+                  </>
                 )}
                 {item.last_error_code && <small>Requiere revisión: {item.last_error_code}</small>}
               </article>
@@ -687,7 +730,12 @@ export default function OrdersWorkspace({ user }) {
                   <td><strong>{formatMoney(order.grand_total, order.currency)}</strong></td>
                   <td>{order.carrier_cost ? formatMoney(order.carrier_cost, order.currency) : "—"}</td>
                   <td><StackedValue values={order.carriers} /></td>
-                  <td><StackedValue values={order.tracking_numbers} fallback="Sin guía" /></td>
+                  <td>
+                    <GuideStack
+                      trackingNumbers={order.tracking_numbers}
+                      statuses={order.label_statuses}
+                    />
+                  </td>
                   <td>
                     <span className={statusClass(arrayValue(order.logistics_state)[0])}>
                       {arrayValue(order.logistics_state).map((item) => stateLabels[item] || item).join(" · ")}
@@ -800,6 +848,14 @@ export default function OrdersWorkspace({ user }) {
                     </button>
                   </div>
                   <div className="document-actions">
+                    <div className="document-status-copy">
+                      <span className={`label-status label-${shipment.label_status || "pending_provider"}`}>
+                        {labelStatusLabels[shipment.label_status] || "PDF pendiente"}
+                      </span>
+                      <small>
+                        {labelStatusDetails[shipment.label_status] || labelStatusDetails.pending_provider}
+                      </small>
+                    </div>
                     {shipment.has_document ? (
                       <a
                         className="guide-link"
@@ -811,7 +867,11 @@ export default function OrdersWorkspace({ user }) {
                       </a>
                     ) : (
                       <label className="upload-guide">
-                        {saving === `document-${shipment.id}` ? "Cargando guía…" : "Adjuntar guía PDF / JPG / PNG"}
+                        {saving === `document-${shipment.id}`
+                          ? "Cargando guía…"
+                          : shipment.label_status === "not_printable"
+                            ? "Adjuntar documento externo (opcional)"
+                            : "Adjuntar guía PDF / JPG / PNG"}
                         <input
                           type="file"
                           accept="application/pdf,image/jpeg,image/png"
