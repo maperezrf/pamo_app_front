@@ -80,23 +80,35 @@ export default function WhatsAppSettings() {
   };
 
   const gates = capabilities?.gates || {};
+  const connectionTone = form.connectionState === "ready"
+    ? "is-ready"
+    : form.connectionState === "blocked"
+      ? "is-blocked"
+      : "is-pending";
+  const lineType = capabilities?.mockMode
+    ? "Número de prueba"
+    : form.connectionState === "ready"
+      ? "Número real verificado"
+      : "Número real por verificar";
 
   return (
     <main className="whatsapp-settings-page">
-      <header className="whatsapp-settings-heading">
+      <header className={`whatsapp-settings-heading ${connectionTone}`}>
         <div>
           <span className="eyebrow">INTEGRACIONES</span>
           <h1>WhatsApp</h1>
-          <p>Vinculación local independiente para futuros módulos de PAMO APP.</p>
+          <p>Estado operativo y diagnóstico de la mensajería de Pedidos.</p>
         </div>
-        <span className="local-safety-pill">externalWrites: 0</span>
+        <span className="whatsapp-connection-pill">
+          {stateLabels[form.connectionState] || form.connectionState}
+        </span>
       </header>
 
       {stale && (
         <section className="whatsapp-alert warning" role="alert">
           <div>
             <strong>La vista puede estar desactualizada.</strong>
-            <span>Última actualización correcta: {lastSuccessAt || "sin registro"}</span>
+            <span>Última conexión correcta: {lastSuccessAt || "sin registro"}</span>
           </div>
           <button type="button" className="secondary-action" onClick={load}>Reintentar</button>
         </section>
@@ -104,13 +116,22 @@ export default function WhatsAppSettings() {
       {error && <p className="whatsapp-alert error" role="alert">{error}</p>}
       {notice && <p className="whatsapp-alert success" role="status">{notice}</p>}
 
-      <section className="whatsapp-status-grid">
+      {form.connectionState === "blocked" && (
+        <section className="whatsapp-alert error persistent" role="alert">
+          <div>
+            <strong>Conexión bloqueada.</strong>
+            <span>El token anterior no se reintentará. Reemplázalo y valídalo fuera de esta pantalla.</span>
+          </div>
+        </section>
+      )}
+
+      <section className={`whatsapp-status-grid ${connectionTone}`} aria-label="Estado operativo">
         <article>
-          <span>Estado</span>
+          <span>Conexión</span>
           <strong>{stateLabels[form.connectionState] || form.connectionState}</strong>
         </article>
         <article>
-          <span>Proveedor local</span>
+          <span>Modo de operación</span>
           <strong>{capabilities?.mockMode ? "Mock seguro" : "Meta Cloud API"}</strong>
         </article>
         <article>
@@ -126,8 +147,8 @@ export default function WhatsAppSettings() {
       <form className="whatsapp-settings-card" onSubmit={save}>
         <header>
           <div>
-            <h2>Configuración básica</h2>
-            <p>Solo almacena identificadores y estado. Los secretos nunca se ingresan aquí.</p>
+            <h2>Estado operativo</h2>
+            <p>Datos visibles del canal. Los secretos nunca se ingresan aquí.</p>
           </div>
           <span>{loading ? "Cargando…" : "Local"}</span>
         </header>
@@ -145,18 +166,6 @@ export default function WhatsAppSettings() {
             Número visible
             <input value={form.displayPhoneNumber} onChange={(event) => update("displayPhoneNumber", event.target.value)} placeholder="+57…" />
           </label>
-          <label>
-            Business ID
-            <input inputMode="numeric" value={form.businessId} onChange={(event) => update("businessId", event.target.value)} />
-          </label>
-          <label>
-            WABA ID
-            <input inputMode="numeric" value={form.wabaId} onChange={(event) => update("wabaId", event.target.value)} />
-          </label>
-          <label>
-            Phone number ID
-            <input inputMode="numeric" value={form.phoneNumberId} onChange={(event) => update("phoneNumberId", event.target.value)} />
-          </label>
         </div>
 
         <div className="whatsapp-settings-controls">
@@ -172,10 +181,70 @@ export default function WhatsAppSettings() {
             {saving ? "Guardando…" : "Guardar configuración local"}
           </button>
           <button type="button" className="secondary-action" disabled title="Requiere autorización antes de modificar Meta">
-            Vincular con Meta · siguiente fase
+            Simulación · no ejecuta cambios
           </button>
         </div>
       </form>
+
+      <section className="whatsapp-profile-card">
+        <header>
+          <div>
+            <h2>Perfil comercial de la línea</h2>
+            <p>No se presenta el número de prueba de Meta como línea final.</p>
+          </div>
+          <b>{lineType}</b>
+        </header>
+        <div className="whatsapp-profile-grid">
+          <div><span>Nombre aprobado</span><strong>{form.displayName || "Pendiente de aprobación"}</strong></div>
+          <div><span>Número</span><strong>{form.displayPhoneNumber || capabilities?.pilotRecipientMasked || "Pendiente"}</strong></div>
+          <div><span>Foto o logo</span><strong>Pendiente de Meta</strong></div>
+          <div><span>Descripción</span><strong>Pendiente de Meta</strong></div>
+          <div><span>Correo y sitio</span><strong>Pendiente de Meta</strong></div>
+          <div><span>Verificación</span><strong>{form.connectionState === "ready" ? "Verificada" : "No verificada"}</strong></div>
+        </div>
+      </section>
+
+      <section className="whatsapp-internal-card">
+        <header>
+          <div>
+            <h2>Copias internas del piloto</h2>
+            <p>Un resumen por pedido nuevo; nunca se mezclan con contactos de proveedores.</p>
+          </div>
+        </header>
+        <div className="whatsapp-internal-list">
+          {(capabilities?.internalRecipients || []).map((recipient) => (
+            <div key={`${recipient.name}-${recipient.phoneMasked}`}>
+              <span><strong>{recipient.name}</strong><small>{recipient.phoneMasked}</small></span>
+              <b>{capabilities?.internalOrderNotificationsEnabled ? "Piloto habilitado" : "Configurado · apagado"}</b>
+            </div>
+          ))}
+          {!capabilities?.internalRecipients?.length && <p>Sin destinatarios internos configurados.</p>}
+        </div>
+        <small>
+          Inicio controlado: {capabilities?.internalCopyCheckpoint
+            ? new Date(capabilities.internalCopyCheckpoint).toLocaleString("es-CO")
+            : "pendiente; no se enviarán pedidos históricos"}
+        </small>
+      </section>
+
+      <details className="whatsapp-technical-card">
+        <summary>Detalles técnicos y diagnóstico</summary>
+        <p>Identificadores no secretos. App ID y tokens no se muestran ni se guardan aquí.</p>
+        <div className="whatsapp-settings-fields">
+          <label>
+            Business ID
+            <input inputMode="numeric" value={form.businessId} onChange={(event) => update("businessId", event.target.value)} />
+          </label>
+          <label>
+            WABA ID
+            <input inputMode="numeric" value={form.wabaId} onChange={(event) => update("wabaId", event.target.value)} />
+          </label>
+          <label>
+            Phone Number ID
+            <input inputMode="numeric" value={form.phoneNumberId} onChange={(event) => update("phoneNumberId", event.target.value)} />
+          </label>
+        </div>
+      </details>
 
       <section className="whatsapp-gates-card">
         <div>

@@ -42,4 +42,5 @@ export const communicationsApi = {
     request(`/api/communications/whatsapp/outbox/${outboxId}/dispatch/`, {
       method: "POST",
     }),
+  outbox: () => request("/api/communications/whatsapp/outbox/"),
 };

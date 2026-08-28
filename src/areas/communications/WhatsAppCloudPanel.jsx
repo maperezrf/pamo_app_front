@@ -10,7 +10,6 @@ function replaceDraft(items, updated) {
 export default function WhatsAppCloudPanel({ selected, stale, onError, onNotice }) {
   const [capabilities, setCapabilities] = useState(null);
   const [shipments, setShipments] = useState([]);
-  const [selectedContacts, setSelectedContacts] = useState({});
   const [drafts, setDrafts] = useState([]);
   const [busy, setBusy] = useState("");
   const selectedKey = selected.join("|");
@@ -21,13 +20,12 @@ export default function WhatsAppCloudPanel({ selected, stale, onError, onNotice 
 
   useEffect(() => {
     setShipments([]);
-    setSelectedContacts({});
     setDrafts([]);
   }, [selectedKey]);
 
   const allRecipientsChosen = useMemo(
-    () => shipments.length > 0 && shipments.every((item) => selectedContacts[item.shipmentId]),
-    [selectedContacts, shipments],
+    () => shipments.length > 0 && shipments.every((item) => item.contacts.length > 0),
+    [shipments],
   );
 
   const loadRecipients = async () => {
@@ -37,8 +35,7 @@ export default function WhatsAppCloudPanel({ selected, stale, onError, onNotice 
     try {
       const payload = await communicationsApi.recipients(selected);
       setShipments(payload.shipments || []);
-      setSelectedContacts({});
-      onNotice("Elige explícitamente el contacto de cada despacho antes de crear borradores.");
+      onNotice("Se preparará una copia independiente para cada contacto activo del despacho.");
     } catch (reason) {
       onError(reason.message);
     } finally {
@@ -54,10 +51,12 @@ export default function WhatsAppCloudPanel({ selected, stale, onError, onNotice 
     setBusy("drafts");
     onError("");
     try {
-      const selections = shipments.map((item) => ({
-        shipment_id: item.shipmentId,
-        contact_id: selectedContacts[item.shipmentId],
-      }));
+      const selections = shipments.flatMap((item) =>
+        item.contacts.map((contact) => ({
+          shipment_id: item.shipmentId,
+          contact_id: contact.id,
+        })),
+      );
       const payload = await communicationsApi.createDrafts(selections);
       setDrafts(payload.drafts || []);
       onNotice("Borradores preparados para revisión. Nada se envió.");
@@ -101,7 +100,7 @@ export default function WhatsAppCloudPanel({ selected, stale, onError, onNotice 
       onNotice(
         payload.simulation
           ? "Simulación local completada; externalWrites=0."
-          : "Solicitud registrada por el proveedor.",
+          : "Envío registrado por Meta al destinatario autorizado.",
       );
     } catch (reason) {
       onError(reason.message);
@@ -135,36 +134,25 @@ export default function WhatsAppCloudPanel({ selected, stale, onError, onNotice 
           {busy === "recipients" ? "Consultando…" : "Preparar WhatsApp Cloud"}
         </button>
         <small>
-          La selección manual de contacto evita enviar un pedido al proveedor equivocado.
+          La ubicación de Shopify determina la bodega; no se infiere por nombre.
         </small>
       </div>
 
       {shipments.length > 0 && (
         <div className="whatsapp-recipient-grid">
           {shipments.map((shipment) => (
-            <label key={shipment.shipmentId}>
+            <div key={shipment.shipmentId} className="whatsapp-recipient-row">
               <span>
                 Pedido {shipment.order} · {shipment.warehouse}
                 {shipment.hasDocument ? " · PDF disponible" : " · sin PDF"}
               </span>
-              <select
-                value={selectedContacts[shipment.shipmentId] || ""}
-                onChange={(event) =>
-                  setSelectedContacts((current) => ({
-                    ...current,
-                    [shipment.shipmentId]: event.target.value,
-                  }))
-                }
-              >
-                <option value="">Elegir contacto</option>
+              <div className="whatsapp-contact-copies">
                 {shipment.contacts.map((contact) => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.name} · {contact.phoneMasked}
-                  </option>
+                  <span key={contact.id}>{contact.name} · {contact.phoneMasked}</span>
                 ))}
-              </select>
+              </div>
               {!shipment.contacts.length && <em>Esta bodega no tiene contactos activos.</em>}
-            </label>
+            </div>
           ))}
           <button
             type="button"
@@ -212,10 +200,16 @@ export default function WhatsAppCloudPanel({ selected, stale, onError, onNotice 
                     disabled={!canDispatch || stale || busy === `dispatch-${draft.id}`}
                     onClick={() => dispatchMock(draft)}
                   >
-                    {capabilities?.mockMode ? "Simular envío local" : "Enviar por Meta"}
+                    {capabilities?.mockMode ? "Simular envío local · no se envía" : "Enviar por Meta"}
                   </button>
                 )}
-                {draft.state === "sent" && <span>Simulación registrada en outbox.</span>}
+                {draft.state === "sent" && (
+                  <span>
+                    {capabilities?.mockMode
+                      ? "Simulación registrada; ningún proveedor recibió el mensaje."
+                      : "Meta registró el envío al único destinatario autorizado del piloto."}
+                  </span>
+                )}
               </footer>
             </article>
           ))}

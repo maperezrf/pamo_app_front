@@ -23,13 +23,12 @@ test("el frontend usa únicamente la API propia y nunca recibe secretos Meta", a
 });
 
 
-test("cada despacho exige una selección explícita de contacto", async () => {
+test("cada despacho prepara una copia para todos sus contactos activos", async () => {
   const panel = await readFile(panelUrl, "utf8");
-  assert.match(panel, /selectedContacts\[shipment\.shipmentId\] \|\| ""/);
-  assert.match(panel, /<option value="">Elegir contacto<\/option>/);
-  assert.match(panel, /Debes elegir un contacto válido para cada despacho seleccionado/);
+  assert.match(panel, /item\.contacts\.map\(\(contact\)/);
   assert.match(panel, /shipment_id: item\.shipmentId/);
-  assert.match(panel, /contact_id: selectedContacts\[item\.shipmentId\]/);
+  assert.match(panel, /contact_id: contact\.id/);
+  assert.match(panel, /una copia independiente para cada contacto activo/);
 });
 
 
@@ -57,9 +56,42 @@ test("la configuración vive fuera de Pedidos y nunca solicita secretos", async 
     readFile(appUrl, "utf8"),
   ]);
   assert.match(app, /path="\/integraciones\/whatsapp"/);
-  assert.match(settings, /Configuración básica/);
+  assert.match(settings, /Estado operativo/);
   assert.match(settings, /Los secretos nunca se ingresan aquí/);
   assert.doesNotMatch(settings, /type="password"/);
-  assert.match(settings, /Vincular con Meta · siguiente fase/);
+  assert.match(settings, /Detalles técnicos y diagnóstico/);
+  assert.match(settings, /Perfil comercial de la línea/);
+  assert.match(settings, /Copias internas del piloto/);
+  assert.match(settings, /Simulación · no ejecuta cambios/);
   assert.match(settings, /disabled title="Requiere autorización/);
+});
+
+
+test("Pedidos conserva el fallback manual y muestra el piloto sin exponer números", async () => {
+  const orders = await readFile(ordersUrl, "utf8");
+  assert.match(orders, /Piloto interno de WhatsApp/);
+  assert.match(orders, /pilotRecipientMasked/);
+  assert.match(orders, /automatización apagada; no procesa pedidos/);
+  assert.match(orders, /<strong>SKU \{item\.sku \|\| "Sin SKU"\}<\/strong>/);
+});
+
+
+test("Pedidos muestra acciones correlacionadas y un historial aditivo de novedades", async () => {
+  const orders = await readFile(ordersUrl, "utf8");
+  assert.match(orders, />Confirmado<\/button>/);
+  assert.match(orders, />Agotado<\/button>/);
+  assert.match(orders, />Listo para despacho<\/button>/);
+  assert.match(orders, />Reportar novedad<\/button>/);
+  assert.match(orders, /Novedades e historial/);
+  assert.match(orders, /supplier_response_events\.map/);
+  assert.match(orders, /Producto averiado/);
+  assert.match(orders, /Problema con la guía/);
+});
+
+
+test("la configuración interna no afirma activación cuando la bandera está apagada", async () => {
+  const settings = await readFile(settingsUrl, "utf8");
+  assert.match(settings, /internalOrderNotificationsEnabled/);
+  assert.match(settings, /Configurado · apagado/);
+  assert.doesNotMatch(settings, /Camila|1898/);
 });

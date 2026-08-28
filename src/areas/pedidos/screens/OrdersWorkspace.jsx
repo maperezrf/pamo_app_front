@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { authenticatedDocumentUrl, ordersApi } from "../api";
+import { communicationsApi } from "../../communications/api";
 
 
 const stateLabels = {
@@ -17,17 +18,17 @@ const stateLabels = {
 
 const supplierStateLabels = {
   pending_response: "Pendiente de respuesta",
-  received: "Pedido recibido",
-  ready_for_guide: "Listo para guia",
+  received: "Confirmado",
+  ready_for_guide: "Listo para despacho",
   issue_reported: "Novedad reportada",
 };
 
 const guideDeliveryLabels = {
-  not_requested: "Guia no solicitada",
-  requested: "Guia solicitada · pendiente",
-  ready_to_send: "Guia lista para enviar",
-  sent: "Guia enviada",
-  failed: "Fallo al enviar guia",
+  not_requested: "Guía no solicitada",
+  requested: "Guía solicitada · pendiente",
+  ready_to_send: "Guía lista para enviar",
+  sent: "Guía enviada",
+  failed: "Fallo al enviar guía",
 };
 
 const channelLabels = {
@@ -78,10 +79,11 @@ const defaultTemplate =
   "Hola, {{contacto}}.\n\nTienes un nuevo despacho de {{bodega}}:\n\n{{lista_pedidos}}\n\nAgradecemos confirmar su estado.";
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
 const noveltyOptions = [
-  ["supplier_stockout", "Agotado"],
-  ["supplier_partial", "Faltante parcial"],
-  ["supplier_delay", "Retraso"],
-  ["supplier_not_recognized", "No reconozco pedido"],
+  ["supplier_stockout", "Producto agotado"],
+  ["supplier_partial", "Cantidad incompleta"],
+  ["supplier_damage", "Producto averiado"],
+  ["supplier_guide_issue", "Problema con la guía"],
+  ["supplier_delay", "Retraso / no despacha hoy"],
   ["supplier_other", "Otra novedad"],
 ];
 const skippedReasonLabels = {
@@ -177,6 +179,7 @@ export default function OrdersWorkspace({ user }) {
   const [locations, setLocations] = useState([]);
   const [options, setOptions] = useState({ channels: [], warehouses: [], carriers: [] });
   const [integrations, setIntegrations] = useState([]);
+  const [messagingCapabilities, setMessagingCapabilities] = useState(null);
   const [configs, setConfigs] = useState([]);
   const [configOpen, setConfigOpen] = useState(false);
   const [configDraft, setConfigDraft] = useState(emptyConfig);
@@ -225,12 +228,14 @@ export default function OrdersWorkspace({ user }) {
       ordersApi.integrations(),
       ordersApi.messagingConfigs(),
       ordersApi.savedFilters(),
+      communicationsApi.capabilities(),
     ]);
     if (results[0].status === "fulfilled") setLocations(results[0].value.locations || []);
     if (results[1].status === "fulfilled") setOptions(results[1].value);
     if (results[2].status === "fulfilled") setIntegrations(results[2].value.providers || []);
     if (results[3].status === "fulfilled") setConfigs(results[3].value.configs || []);
     if (results[4].status === "fulfilled") setSavedFilters(results[4].value.filters || []);
+    if (results[5].status === "fulfilled") setMessagingCapabilities(results[5].value);
   }, []);
 
   useEffect(() => {
@@ -442,6 +447,23 @@ export default function OrdersWorkspace({ user }) {
       {notice && <div className="orders-alert success">{notice}</div>}
 
       <section className="messaging-config-card">
+        <div
+          className={`pilot-messaging-status ${messagingCapabilities?.externalWritesEnabled ? "pilot-live" : "pilot-simulation"}`}
+          role="status"
+        >
+          <div>
+            <strong>Piloto interno de WhatsApp</strong>
+            <span>
+              Destino único {messagingCapabilities?.pilotRecipientMasked || "sin configurar"} ·
+              {messagingCapabilities?.internalOrderNotificationsEnabled
+                ? messagingCapabilities?.externalWritesEnabled
+                  ? ` salida real controlada en ${messagingCapabilities?.deploymentTier || "staging"}`
+                  : " preparado, pero Meta permanece bloqueado"
+                : " automatización apagada; no procesa pedidos"}
+            </span>
+          </div>
+          <b>{messagingCapabilities?.internalOrderNotificationsEnabled ? "Piloto habilitado" : "Apagado"}</b>
+        </div>
         <button
           type="button"
           className="messaging-config-toggle"
@@ -893,7 +915,11 @@ export default function OrdersWorkspace({ user }) {
               <h3>Artículos</h3>
               {detail.items.map((item) => (
                 <div className="drawer-line" key={item.id}>
-                  <div><strong>{item.name}</strong><small>SKU {item.sku || "Sin SKU"} · {item.quantity} unidad(es)</small></div>
+                  <div className="drawer-item-identity">
+                    <strong>SKU {item.sku || "Sin SKU"}</strong>
+                    <span>{item.name}</span>
+                    <small>{item.quantity} unidad(es)</small>
+                  </div>
                   <b>{formatMoney(item.line_total, detail.currency)}</b>
                 </div>
               ))}
@@ -913,13 +939,14 @@ export default function OrdersWorkspace({ user }) {
                   </header>
                   <div className="supplier-response-summary">
                     <div><span>Proveedor</span><strong>{supplierStateLabels[shipment.supplier_state] || shipment.supplier_state}</strong></div>
-                    <div><span>Guia por WhatsApp</span><strong>{guideDeliveryLabels[shipment.guide_delivery_state] || shipment.guide_delivery_state}</strong></div>
+                    <div><span>Guía por WhatsApp</span><strong>{guideDeliveryLabels[shipment.guide_delivery_state] || shipment.guide_delivery_state}</strong></div>
                   </div>
                   <div className="supplier-simulator" aria-label="Simular respuesta del proveedor">
-                    <span>Prueba local · no envia mensajes</span>
+                    <span>Prueba local · no envía mensajes</span>
                     <div>
-                      <button type="button" disabled={saving === `supplier-${shipment.id}`} onClick={() => simulateSupplierResponse(shipment, "order_received")}>Pedido recibido</button>
-                      <button type="button" disabled={saving === `supplier-${shipment.id}`} onClick={() => simulateSupplierResponse(shipment, "request_guide")}>Listo, enviar guia</button>
+                      <button type="button" disabled={saving === `supplier-${shipment.id}`} onClick={() => simulateSupplierResponse(shipment, "order_received")}>Confirmado</button>
+                      <button type="button" disabled={saving === `supplier-${shipment.id}`} onClick={() => simulateSupplierResponse(shipment, "report_stockout")}>Agotado</button>
+                      <button type="button" disabled={saving === `supplier-${shipment.id}`} onClick={() => simulateSupplierResponse(shipment, "request_guide")}>Listo para despacho</button>
                       <button type="button" disabled={saving === `supplier-${shipment.id}`} onClick={() => simulateSupplierResponse(shipment, "report_issue")}>Reportar novedad</button>
                     </div>
                   </div>
@@ -975,8 +1002,25 @@ export default function OrdersWorkspace({ user }) {
                           </button>
                         </div>
                       )}
+                      {["awaiting_item", "awaiting_quantity"].includes(novelty.detail_state) && (
+                        <small className="novelty-step-note">
+                          Flujo seguro en WhatsApp: primero se selecciona el SKU y luego la cantidad afectada.
+                        </small>
+                      )}
                     </div>
                   ))}
+                  {!!shipment.supplier_response_events?.length && (
+                    <details className="supplier-history" open>
+                      <summary>Novedades e historial ({shipment.supplier_response_events.length})</summary>
+                      {shipment.supplier_response_events.map((event) => (
+                        <div key={event.id}>
+                          <strong>{event.action_label || event.action}</strong>
+                          <span>{event.warehouse || shipment.warehouse_name || "Sin bodega"} · {event.actor || `Contacto ••••${event.sender_suffix}`}</span>
+                          <small>{new Date(event.occurred_at).toLocaleString("es-CO")} · {event.source} · {event.result}</small>
+                        </div>
+                      ))}
+                    </details>
+                  )}
                   <div className="shipment-fields">
                     <label>
                       Bodega
