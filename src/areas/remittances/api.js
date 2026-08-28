@@ -105,4 +105,25 @@ export const remittancesApi = {
     method: "POST",
     body: payload,
   }),
+  accountingQueue: () => request("/api/facturacion/remisiones/contabilidad/"),
+  updateAccounting: (id, payload) => request(`/api/facturacion/remisiones/${id}/contabilidad/`, {
+    method: "PATCH",
+    body: payload,
+  }),
+  searchSiigoProducts: (query) => request(
+    `/api/facturacion/remisiones/contabilidad/productos-siigo/?q=${encodeURIComponent(query)}`,
+  ),
+  updateCommercialPreparation: (id, payload) => request(
+    `/api/facturacion/remisiones/${id}/contabilidad/preparacion/`,
+    { method: "PATCH", body: payload },
+  ),
+  invoicePreview: (id) => request(`/api/facturacion/remisiones/${id}/factura/vista-previa/`),
+  siigoInvoicePreflight: (id) => request(
+    `/api/facturacion/remisiones/${id}/factura/prevalidar-siigo/`,
+    { method: "POST", body: {} },
+  ),
+  createSiigoDraft: (id) => request(
+    `/api/facturacion/remisiones/${id}/factura/confirmar/`,
+    { method: "POST", body: { mode: "DRAFT" } },
+  ),
 };
