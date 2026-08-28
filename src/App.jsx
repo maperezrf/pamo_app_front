@@ -10,6 +10,7 @@ import CatalogWorkspace from "./areas/catalogo/screens/CatalogWorkspace";
 import OrdersWorkspace from "./areas/pedidos/screens/OrdersWorkspace";
 import SalesDashboard from "./areas/pedidos/screens/SalesDashboard";
 import WhatsAppSettings from "./areas/communications/WhatsAppSettings";
+import ShippingDeliveryWorkspace from "./areas/shippingDelivery/screens/ShippingDeliveryWorkspace";
 import "./areas/communications/whatsapp-settings.css";
 import "./areas/pedidos/styles/orders.css";
 
@@ -115,6 +116,7 @@ export default function App() {
         <Route path="/ventas" element={<SalesDashboard />} />
         <Route path="/ventas/pedidos" element={<OrdersWorkspace user={user} />} />
         <Route path="/integraciones/whatsapp" element={<WhatsAppSettings />} />
+        <Route path="/envios-entrega" element={<ShippingDeliveryWorkspace user={user} />} />
       </Route>
     </Routes>
   );
