@@ -636,7 +636,7 @@ export default function OrdersWorkspace({ user }) {
                     className={config?.active && activeContacts ? "warehouse-enabled" : "warehouse-disabled"}
                     onClick={() => chooseConfig(String(location.id))}
                   >
-                    <strong>{location.name}</strong>
+                    <strong>{location.display_name || location.name}</strong>
                     <span>
                       {config?.active
                         ? `${activeContacts} contacto(s) activo(s)`
@@ -654,7 +654,7 @@ export default function OrdersWorkspace({ user }) {
               >
                 <option value="">Selecciona una bodega</option>
                 {locations.map((location) => (
-                  <option key={location.id} value={location.id}>{location.name}</option>
+                  <option key={location.id} value={location.id}>{location.display_name || location.name}</option>
                 ))}
               </select>
             </label>
@@ -1186,7 +1186,7 @@ export default function OrdersWorkspace({ user }) {
                         }
                       >
                         <option value="">Elegir bodega</option>
-                        {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
+                        {locations.map((location) => <option key={location.id} value={location.id}>{location.display_name || location.name}</option>)}
                       </select>
                     </label>
                     <label>
