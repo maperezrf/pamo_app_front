@@ -39,6 +39,15 @@ export const ordersApi = {
   integrations: () => request("/api/pedidos/integrations/"),
   updateShipment: (shipmentId, data) =>
     request(`/api/pedidos/shipments/${shipmentId}/`, { method: "PATCH", data }),
+  shippingPlan: (shipmentId) =>
+    request(`/api/pedidos/shipments/${shipmentId}/shipping-plan/`),
+  updateShippingPlan: (shipmentId, data) =>
+    request(`/api/pedidos/shipments/${shipmentId}/shipping-plan/`, { method: "PATCH", data }),
+  prepareShippingPlan: (shipmentId) =>
+    request(`/api/pedidos/shipments/${shipmentId}/shipping-plan/`, {
+      method: "POST",
+      data: { action: "prepare" },
+    }),
   updateIncident: (shipmentId, data) =>
     request(`/api/pedidos/shipments/${shipmentId}/incident/`, { method: "PATCH", data }),
   uploadDocument: (shipmentId, file) => {

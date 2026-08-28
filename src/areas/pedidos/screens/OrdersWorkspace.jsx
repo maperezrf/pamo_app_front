@@ -101,6 +101,24 @@ const emptyConfig = {
   contacts: [],
 };
 
+const shippingDraft = (plan = {}) => ({
+  destination: {
+    address: plan.destination?.address || "",
+    city: plan.destination?.city || "",
+    department: plan.destination?.department || "",
+    dane_code: plan.destination?.dane_code || "",
+    postal_code: plan.destination?.postal_code || "",
+    country: "CO",
+  },
+  package: {
+    weight_kg: plan.package?.weight_kg || "",
+    length_cm: plan.package?.length_cm || "",
+    width_cm: plan.package?.width_cm || "",
+    height_cm: plan.package?.height_cm || "",
+    confirmed: Boolean(plan.package?.confirmed),
+  },
+});
+
 const arrayValue = (value) => (Array.isArray(value) ? value : value ? [value] : []);
 const formatMoney = (value, currency = "COP") =>
   new Intl.NumberFormat("es-CO", {
@@ -171,6 +189,7 @@ export default function OrdersWorkspace({ user }) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [guide, setGuide] = useState(searchParams.get("guide") || "");
+  const [assignment, setAssignment] = useState(searchParams.get("assignment") || "");
   const [channel, setChannel] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -179,6 +198,7 @@ export default function OrdersWorkspace({ user }) {
   const [locations, setLocations] = useState([]);
   const [options, setOptions] = useState({ channels: [], warehouses: [], carriers: [] });
   const [integrations, setIntegrations] = useState([]);
+  const [overview, setOverview] = useState(null);
   const [messagingCapabilities, setMessagingCapabilities] = useState(null);
   const [configs, setConfigs] = useState([]);
   const [configOpen, setConfigOpen] = useState(false);
@@ -186,6 +206,8 @@ export default function OrdersWorkspace({ user }) {
   const [followups, setFollowups] = useState([]);
   const [messagingSkipped, setMessagingSkipped] = useState([]);
   const [noveltyDrafts, setNoveltyDrafts] = useState({});
+  const [shippingPlans, setShippingPlans] = useState({});
+  const [shippingPlanDrafts, setShippingPlanDrafts] = useState({});
   const [savedFilters, setSavedFilters] = useState([]);
   const [savedFilterName, setSavedFilterName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -195,8 +217,8 @@ export default function OrdersWorkspace({ user }) {
   const [stale, setStale] = useState(false);
 
   const query = useMemo(
-    () => ({ search, guide, channel, from, to, page, page_size: 25 }),
-    [search, guide, channel, from, to, page],
+    () => ({ search, guide, assignment, channel, from, to, page, page_size: 25 }),
+    [search, guide, assignment, channel, from, to, page],
   );
 
   const loadOrders = useCallback(async (silent = false) => {
@@ -223,6 +245,7 @@ export default function OrdersWorkspace({ user }) {
 
   const loadSupportData = useCallback(async () => {
     const results = await Promise.allSettled([
+      ordersApi.overview(),
       ordersApi.locations(),
       ordersApi.filterOptions(),
       ordersApi.integrations(),
@@ -230,12 +253,13 @@ export default function OrdersWorkspace({ user }) {
       ordersApi.savedFilters(),
       communicationsApi.capabilities(),
     ]);
-    if (results[0].status === "fulfilled") setLocations(results[0].value.locations || []);
-    if (results[1].status === "fulfilled") setOptions(results[1].value);
-    if (results[2].status === "fulfilled") setIntegrations(results[2].value.providers || []);
-    if (results[3].status === "fulfilled") setConfigs(results[3].value.configs || []);
-    if (results[4].status === "fulfilled") setSavedFilters(results[4].value.filters || []);
-    if (results[5].status === "fulfilled") setMessagingCapabilities(results[5].value);
+    if (results[0].status === "fulfilled") setOverview(results[0].value);
+    if (results[1].status === "fulfilled") setLocations(results[1].value.locations || []);
+    if (results[2].status === "fulfilled") setOptions(results[2].value);
+    if (results[3].status === "fulfilled") setIntegrations(results[3].value.providers || []);
+    if (results[4].status === "fulfilled") setConfigs(results[4].value.configs || []);
+    if (results[5].status === "fulfilled") setSavedFilters(results[5].value.filters || []);
+    if (results[6].status === "fulfilled") setMessagingCapabilities(results[6].value);
   }, []);
 
   useEffect(() => {
@@ -261,14 +285,36 @@ export default function OrdersWorkspace({ user }) {
     const next = new URLSearchParams();
     if (search) next.set("search", search);
     if (guide) next.set("guide", guide);
+    if (assignment) next.set("assignment", assignment);
     setSearchParams(next, { replace: true });
-  }, [guide, search, setSearchParams]);
+  }, [assignment, guide, search, setSearchParams]);
+
+  const loadShippingPlans = async (order) => {
+    const results = await Promise.allSettled(
+      (order.shipments || []).map(async (shipment) => [
+        shipment.id,
+        await ordersApi.shippingPlan(shipment.id),
+      ]),
+    );
+    const plans = {};
+    const drafts = {};
+    results.forEach((result) => {
+      if (result.status !== "fulfilled") return;
+      const [shipmentId, plan] = result.value;
+      plans[shipmentId] = plan;
+      drafts[shipmentId] = shippingDraft(plan);
+    });
+    setShippingPlans(plans);
+    setShippingPlanDrafts(drafts);
+  };
 
   const openOrder = async (orderId) => {
     setSaving("detail");
     setError("");
     try {
-      setDetail(await ordersApi.detail(orderId));
+      const order = await ordersApi.detail(orderId);
+      setDetail(order);
+      await loadShippingPlans(order);
     } catch (reason) {
       setError(reason.message);
     } finally {
@@ -304,6 +350,69 @@ export default function OrdersWorkspace({ user }) {
     } catch (reason) {
       setError(reason.message);
       if (reason.status === 409 && detail) await openOrder(detail.id);
+    } finally {
+      setSaving("");
+    }
+  };
+
+  const updateShippingDraft = (shipmentId, section, field, value) => {
+    setShippingPlanDrafts((current) => ({
+      ...current,
+      [shipmentId]: {
+        ...(current[shipmentId] || shippingDraft()),
+        [section]: {
+          ...(current[shipmentId]?.[section] || {}),
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  const saveShippingPlan = async (shipment) => {
+    const draft = shippingPlanDrafts[shipment.id] || shippingDraft();
+    setSaving(`shipping-${shipment.id}`);
+    setError("");
+    try {
+      await ordersApi.updateShippingPlan(shipment.id, {
+        version: shipment.version,
+        destination: draft.destination,
+        package: draft.package,
+      });
+      setNotice("Datos de cotización guardados y auditados. No se compró ninguna guía.");
+      await openOrder(detail.id);
+    } catch (reason) {
+      setError(reason.message);
+    } finally {
+      setSaving("");
+    }
+  };
+
+  const selectShippingQuote = async (shipment, fingerprint) => {
+    setSaving(`shipping-${shipment.id}`);
+    setError("");
+    try {
+      await ordersApi.updateShippingPlan(shipment.id, {
+        version: shipment.version,
+        quote_fingerprint: fingerprint,
+      });
+      setNotice("Tarifa seleccionada por la operadora. Sigue siendo no vinculante.");
+      await openOrder(detail.id);
+    } catch (reason) {
+      setError(reason.message);
+    } finally {
+      setSaving("");
+    }
+  };
+
+  const prepareGuideRequest = async (shipment) => {
+    setSaving(`shipping-${shipment.id}`);
+    setError("");
+    try {
+      await ordersApi.prepareShippingPlan(shipment.id);
+      setNotice("Despacho preparado localmente. La compra de la guía continúa bloqueada.");
+      await openOrder(detail.id);
+    } catch (reason) {
+      setError(reason.data?.blockers?.join(" ") || reason.message);
     } finally {
       setSaving("");
     }
@@ -397,7 +506,7 @@ export default function OrdersWorkspace({ user }) {
 
   const saveCurrentFilter = async () => {
     if (!savedFilterName.trim()) return;
-    await ordersApi.saveFilter(savedFilterName.trim(), { search, guide, channel, from, to });
+    await ordersApi.saveFilter(savedFilterName.trim(), { search, guide, assignment, channel, from, to });
     setSavedFilterName("");
     await loadSupportData();
   };
@@ -407,6 +516,7 @@ export default function OrdersWorkspace({ user }) {
     if (!found) return;
     setSearch(found.filters.search || "");
     setGuide(found.filters.guide || "");
+    setAssignment(found.filters.assignment || "");
     setChannel(found.filters.channel || "");
     setFrom(found.filters.from || "");
     setTo(found.filters.to || "");
@@ -416,6 +526,7 @@ export default function OrdersWorkspace({ user }) {
   const clearFilters = () => {
     setSearch("");
     setGuide("");
+    setAssignment("");
     setChannel("");
     setFrom("");
     setTo("");
@@ -436,6 +547,41 @@ export default function OrdersWorkspace({ user }) {
         </div>
         <span className="local-safety-pill">externalWrites: 0</span>
       </header>
+
+      <section className="orders-summary-grid" aria-label="Resumen operativo de pedidos">
+        <button type="button" onClick={() => { setGuide(""); setAssignment(""); setPage(1); }}>
+          <span>Pedidos visibles</span>
+          <strong>{overview?.total ?? "—"}</strong>
+          <small>{overview?.split ?? 0} dividido(s) en varias bodegas</small>
+        </button>
+        <button
+          type="button"
+          className={assignment === "unassigned" ? "active" : ""}
+          onClick={() => { setAssignment("unassigned"); setPage(1); }}
+        >
+          <span>Sin bodega</span>
+          <strong>{overview?.unassigned ?? "—"}</strong>
+          <small>Requieren asignación de Camila</small>
+        </button>
+        <button
+          type="button"
+          className={guide === "missing" ? "active" : ""}
+          onClick={() => { setGuide("missing"); setPage(1); }}
+        >
+          <span>Sin guía</span>
+          <strong>{overview?.without_guide ?? "—"}</strong>
+          <small>PDF pendiente o guía aún no creada</small>
+        </button>
+        <button
+          type="button"
+          className={guide === "present_without_tracking" ? "active" : ""}
+          onClick={() => { setGuide("present_without_tracking"); setPage(1); }}
+        >
+          <span>Guía sin trazabilidad</span>
+          <strong>{overview?.guide_without_tracking ?? "—"}</strong>
+          <small>Necesitan seguimiento</small>
+        </button>
+      </section>
 
       {stale && (
         <div className="orders-alert warning">
@@ -650,6 +796,11 @@ export default function OrdersWorkspace({ user }) {
             {options.channels?.map((item) => (
               <option key={item} value={item}>{channelLabels[item] || item}</option>
             ))}
+          </select>
+          <select value={assignment} onChange={(event) => { setAssignment(event.target.value); setPage(1); }}>
+            <option value="">Todas las asignaciones</option>
+            <option value="assigned">Con bodega</option>
+            <option value="unassigned">Sin bodega</option>
           </select>
           <button type="button" className="secondary-action" onClick={clearFilters}>Limpiar</button>
         </div>
@@ -1065,6 +1216,132 @@ export default function OrdersWorkspace({ user }) {
                       {saving === `shipment-${shipment.id}` ? "Guardando…" : "Guardar despacho"}
                     </button>
                   </div>
+                  <details className="shipment-shipping-plan">
+                    <summary>
+                      <span>
+                        <strong>Cotizar y preparar guía</strong>
+                        <small>Origen · destino · paquete · tarifa humana</small>
+                      </span>
+                      <b>{shippingPlans[shipment.id]?.guideRequestState || "Revisar"}</b>
+                    </summary>
+                    {shippingPlans[shipment.id] ? (
+                      <div className="shipping-plan-body">
+                        <div className="shipping-readiness-steps">
+                          <span className={shipment.warehouse_location_id ? "ready" : "blocked"}>1. Bodega</span>
+                          <span className={shippingPlans[shipment.id].originReady ? "ready" : "blocked"}>2. Origen</span>
+                          <span className={shippingPlans[shipment.id].destinationReady ? "ready" : "blocked"}>3. Destino</span>
+                          <span className={shippingPlans[shipment.id].packageReady ? "ready" : "blocked"}>4. Paquete</span>
+                          <span className={shippingPlans[shipment.id].selectedQuote ? "ready" : "blocked"}>5. Tarifa</span>
+                        </div>
+                        <div className="shipping-destination-grid">
+                          <label>
+                            Dirección de entrega
+                            <input
+                              value={shippingPlanDrafts[shipment.id]?.destination?.address || ""}
+                              onChange={(event) => updateShippingDraft(shipment.id, "destination", "address", event.target.value)}
+                            />
+                          </label>
+                          <label>
+                            Ciudad
+                            <input
+                              value={shippingPlanDrafts[shipment.id]?.destination?.city || ""}
+                              onChange={(event) => updateShippingDraft(shipment.id, "destination", "city", event.target.value)}
+                            />
+                          </label>
+                          <label>
+                            Departamento
+                            <input
+                              value={shippingPlanDrafts[shipment.id]?.destination?.department || ""}
+                              onChange={(event) => updateShippingDraft(shipment.id, "destination", "department", event.target.value)}
+                            />
+                          </label>
+                          <label>
+                            Código DANE
+                            <input
+                              inputMode="numeric"
+                              maxLength="8"
+                              value={shippingPlanDrafts[shipment.id]?.destination?.dane_code || ""}
+                              onChange={(event) => updateShippingDraft(shipment.id, "destination", "dane_code", event.target.value.replace(/\D/g, ""))}
+                            />
+                          </label>
+                        </div>
+                        <div className="shipping-package-grid">
+                          {[
+                            ["weight_kg", "Peso (kg)"],
+                            ["length_cm", "Largo (cm)"],
+                            ["width_cm", "Ancho (cm)"],
+                            ["height_cm", "Alto (cm)"],
+                          ].map(([field, label]) => (
+                            <label key={field}>
+                              {label}
+                              <input
+                                inputMode="decimal"
+                                value={shippingPlanDrafts[shipment.id]?.package?.[field] || ""}
+                                onChange={(event) => updateShippingDraft(shipment.id, "package", field, event.target.value)}
+                              />
+                            </label>
+                          ))}
+                          <label className="shipping-package-confirm">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(shippingPlanDrafts[shipment.id]?.package?.confirmed)}
+                              onChange={(event) => updateShippingDraft(shipment.id, "package", "confirmed", event.target.checked)}
+                            />
+                            Confirmo que son medidas del paquete, no del producto
+                          </label>
+                        </div>
+                        <button
+                          type="button"
+                          className="secondary-action"
+                          disabled={saving === `shipping-${shipment.id}`}
+                          onClick={() => saveShippingPlan(shipment)}
+                        >
+                          {saving === `shipping-${shipment.id}` ? "Guardando…" : "Guardar datos y revisar tarifas"}
+                        </button>
+                        {shippingPlans[shipment.id].blockers?.length > 0 && (
+                          <div className="shipping-plan-blockers" role="status">
+                            <strong>Falta para generar la guía</strong>
+                            {shippingPlans[shipment.id].blockers.map((item) => <span key={item}>{item}</span>)}
+                          </div>
+                        )}
+                        {shippingPlans[shipment.id].quoteOptions?.length > 0 && (
+                          <div className="shipping-quote-options">
+                            <header>
+                              <strong>Tarifas vigentes no vinculantes</strong>
+                              <small>Camila conserva la decisión final.</small>
+                            </header>
+                            {shippingPlans[shipment.id].quoteOptions.map((option) => (
+                              <button
+                                type="button"
+                                key={option.fingerprint}
+                                className={shippingPlans[shipment.id].selectedQuote?.fingerprint === option.fingerprint ? "selected" : ""}
+                                disabled={saving === `shipping-${shipment.id}`}
+                                onClick={() => selectShippingQuote(shipment, option.fingerprint)}
+                              >
+                                <span><strong>{option.carrier}</strong><small>{option.service || "Servicio estándar"}</small></span>
+                                <b>{formatMoney(option.amount, option.currency)}</b>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <div className="shipping-prepare-footer">
+                          <span>
+                            La selección queda auditada para futuras recomendaciones; no se automatiza todavía.
+                          </span>
+                          <button
+                            type="button"
+                            className="primary-action"
+                            disabled={!shippingPlans[shipment.id].readyToPrepare || saving === `shipping-${shipment.id}`}
+                            onClick={() => prepareGuideRequest(shipment)}
+                          >
+                            Preparar generación · sin comprar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="shipping-plan-loading">Cargando requisitos del despacho…</p>
+                    )}
+                  </details>
                   <div className="document-actions">
                     <div className="document-status-copy">
                       <span className={`label-status label-${shipment.label_status || "pending_provider"}`}>
