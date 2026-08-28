@@ -89,6 +89,42 @@
   padding: 16px 20px 20px;
 }
 
+.warehouse-message-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.warehouse-message-summary button {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  border: 1px solid #d4ded7;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 10px;
+  text-align: left;
+}
+
+.warehouse-message-summary button span { color: var(--ink-dim); font-size: 10px; }
+.warehouse-message-summary .warehouse-enabled { border-color: #9bc9ad; background: #f2faf5; }
+.warehouse-message-summary .warehouse-disabled { border-style: dashed; background: #f7f8f7; }
+
+.warehouse-messaging-toggle {
+  grid-template-columns: auto 1fr !important;
+  align-items: flex-start;
+  border: 1px solid #cbded2;
+  border-radius: 10px;
+  background: #f5faf7;
+  padding: 11px;
+}
+
+.warehouse-messaging-toggle input { width: auto; min-height: 0; margin-top: 2px; }
+.warehouse-messaging-toggle span { display: grid; gap: 3px; }
+.warehouse-messaging-toggle small { color: var(--ink-dim); font-weight: 500; }
+
 .messaging-config-body > label,
 .orders-filter-grid label,
 .shipment-fields label {
@@ -430,6 +466,15 @@
 .whatsapp-state.state-read { background: #e5f4eb; color: var(--accent-hover); }
 .whatsapp-state.state-failed { background: var(--danger-soft); color: var(--danger); }
 
+.skipped-messages {
+  display: grid;
+  gap: 4px;
+  border-top: 1px solid #ecd8ad;
+  background: #fff9e9;
+  color: #6f5017;
+  padding: 12px 14px;
+  font-size: 11px;
+}
 .orders-table-wrap {
   width: 100%;
   max-width: 100%;
@@ -605,6 +650,14 @@
 .supplier-simulator > div { display: flex; flex-wrap: wrap; gap: 6px; }
 .supplier-simulator button { padding: 7px 10px; border: 1px solid #a9cbbb; border-radius: 999px; background: #fff; color: #145c42; font-size: 11px; font-weight: 700; }
 .supplier-novelty { display: grid; gap: 3px; margin-top: 10px; padding: 9px 10px; border-left: 3px solid #b64636; background: #fff4f1; }
+.novelty-category-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.novelty-category-actions small { flex-basis: 100%; color: #7a4038; }
+.novelty-category-actions button { border: 1px solid #dfb3ac; border-radius: 999px; background: #fff; color: #8c3228; cursor: pointer; padding: 6px 9px; font-size: 10px; font-weight: 700; }
+.novelty-detail-simulator { display: grid; grid-template-columns: 1fr auto; gap: 6px; margin-top: 7px; }
+.novelty-detail-simulator small { grid-column: 1 / -1; color: #7a4038; }
+.novelty-detail-simulator input { min-width: 0; min-height: 34px; border: 1px solid #dfb3ac; border-radius: 8px; padding: 0 9px; }
+.novelty-detail-simulator button { border: 1px solid #b64636; border-radius: 8px; background: #b64636; color: #fff; cursor: pointer; padding: 0 10px; font-size: 10px; font-weight: 700; }
+.novelty-detail-simulator button:disabled { cursor: not-allowed; opacity: .5; }
 .supplier-alert { color: #a1372c !important; font-weight: 700; }
 
 .shipment-fields {
@@ -753,4 +806,5 @@
   .order-drawer { padding: 16px; }
   .drawer-footer { margin: 18px -16px -16px; padding: 12px 16px; }
   .supplier-response-summary { grid-template-columns: 1fr; }
+  .novelty-detail-simulator { grid-template-columns: 1fr; }
 }

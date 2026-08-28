@@ -75,8 +75,20 @@ const formatStatusDate = (value) =>
   value ? new Date(value).toLocaleString("es-CO") : "Sin lectura registrada";
 
 const defaultTemplate =
-  "Hola, {{contacto}}.\n\nEstos son los despachos pendientes de {{bodega}}:\n\n{{lista_pedidos}}\n\nAgradecemos confirmar su estado.";
+  "Hola, {{contacto}}.\n\nTienes un nuevo despacho de {{bodega}}:\n\n{{lista_pedidos}}\n\nAgradecemos confirmar su estado.";
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
+const noveltyOptions = [
+  ["supplier_stockout", "Agotado"],
+  ["supplier_partial", "Faltante parcial"],
+  ["supplier_delay", "Retraso"],
+  ["supplier_not_recognized", "No reconozco pedido"],
+  ["supplier_other", "Otra novedad"],
+];
+const skippedReasonLabels = {
+  warehouse_not_assigned: "sin bodega asignada",
+  warehouse_messaging_disabled: "mensajería desactivada",
+  active_contact_missing: "sin contacto activo",
+};
 
 const emptyConfig = {
   warehouse_id: "",
@@ -169,6 +181,8 @@ export default function OrdersWorkspace({ user }) {
   const [configOpen, setConfigOpen] = useState(false);
   const [configDraft, setConfigDraft] = useState(emptyConfig);
   const [followups, setFollowups] = useState([]);
+  const [messagingSkipped, setMessagingSkipped] = useState([]);
+  const [noveltyDrafts, setNoveltyDrafts] = useState({});
   const [savedFilters, setSavedFilters] = useState([]);
   const [savedFilterName, setSavedFilterName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -306,14 +320,20 @@ export default function OrdersWorkspace({ user }) {
     }
   };
 
-  const simulateSupplierResponse = async (shipment, action) => {
+  const simulateSupplierResponse = async (shipment, action, category = "", responseDetail = "") => {
     setSaving(`supplier-${shipment.id}`);
     setError("");
     try {
-      await ordersApi.simulateSupplierResponse(shipment.id, action);
+      await ordersApi.simulateSupplierResponse(shipment.id, action, category, responseDetail);
       await openOrder(detail.id);
       await loadOrders();
-      setNotice("Respuesta de proveedor simulada localmente. No se envio ningun WhatsApp.");
+      setNotice(
+        action === "report_issue"
+          ? "Novedad abierta. En el flujo real, el proveedor recibe de inmediato el menú para clasificarla."
+          : action === "provide_issue_detail"
+            ? "Detalle de la novedad asociado al despacho correcto. No se envió ningún WhatsApp."
+            : "Respuesta de proveedor simulada localmente. No se envió ningún WhatsApp.",
+      );
     } catch (reason) {
       setError(reason.message);
     } finally {
@@ -328,8 +348,14 @@ export default function OrdersWorkspace({ user }) {
     try {
       const payload = await ordersApi.prepareWhatsApp(selected);
       setFollowups(payload.generated || []);
-      setNotice(`${payload.recipientCount} mensaje(s) preparado(s). Nada se envió automáticamente.`);
+      setMessagingSkipped(payload.skipped || []);
+      setNotice(
+        `${payload.recipientCount} mensaje(s) para ${payload.shipmentCount} despacho(s). ` +
+        `${payload.skipped?.length || 0} despacho(s) omitido(s). Nada se envió automáticamente.`,
+      );
     } catch (reason) {
+      setFollowups([]);
+      setMessagingSkipped(reason.data?.skipped || []);
       setError(reason.message);
     } finally {
       setSaving("");
@@ -423,12 +449,35 @@ export default function OrdersWorkspace({ user }) {
         >
           <span>
             <strong>Configuración de mensajería por bodega</strong>
-            <small>Contactos activos y plantillas separadas, sin envío automático.</small>
+            <small>Una libreta por bodega. Cada despacho se prepara por separado para cada contacto activo.</small>
           </span>
           <b>{configOpen ? "−" : "+"}</b>
         </button>
         {configOpen && (
           <div className="messaging-config-body">
+            <div className="warehouse-message-summary">
+              {locations.map((location) => {
+                const config = configs.find(
+                  (item) => String(item.warehouse_id) === String(location.id),
+                );
+                const activeContacts = config?.contacts?.filter((item) => item.active).length || 0;
+                return (
+                  <button
+                    type="button"
+                    key={location.id}
+                    className={config?.active && activeContacts ? "warehouse-enabled" : "warehouse-disabled"}
+                    onClick={() => chooseConfig(String(location.id))}
+                  >
+                    <strong>{location.name}</strong>
+                    <span>
+                      {config?.active
+                        ? `${activeContacts} contacto(s) activo(s)`
+                        : "No envía mensajes"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
             <label>
               Bodega
               <select
@@ -440,6 +489,19 @@ export default function OrdersWorkspace({ user }) {
                   <option key={location.id} value={location.id}>{location.name}</option>
                 ))}
               </select>
+            </label>
+            <label className="warehouse-messaging-toggle">
+              <input
+                type="checkbox"
+                checked={configDraft.active}
+                onChange={(event) =>
+                  setConfigDraft((current) => ({ ...current, active: event.target.checked }))
+                }
+              />
+              <span>
+                <strong>Enviar pedidos de esta bodega por WhatsApp</strong>
+                <small>Si está apagado, sus despachos se omiten y nunca usan contactos de otra bodega.</small>
+              </span>
             </label>
             <div className="contact-editor-list">
               {configDraft.contacts.map((contact, index) => (
@@ -536,7 +598,7 @@ export default function OrdersWorkspace({ user }) {
               />
             </label>
             <div className="config-footer">
-              <span>Máximo 2 intentos. WhatsApp siempre queda bajo control humano.</span>
+              <span>Regla: 1 despacho × cada contacto activo. Máximo 2 intentos.</span>
               <button
                 type="button"
                 className="primary-action"
@@ -670,6 +732,17 @@ export default function OrdersWorkspace({ user }) {
                   Revisar y abrir WhatsApp
                 </button>
               </article>
+            ))}
+          </div>
+        )}
+
+        {messagingSkipped.length > 0 && (
+          <div className="skipped-messages" role="status">
+            <strong>Despachos omitidos</strong>
+            {messagingSkipped.map((item) => (
+              <span key={`${item.shipmentId}-${item.reason}`}>
+                {item.warehouse}: {skippedReasonLabels[item.reason] || item.reason}
+              </span>
             ))}
           </div>
         )}
@@ -853,6 +926,55 @@ export default function OrdersWorkspace({ user }) {
                   {shipment.novelties?.filter((item) => item.state === "open").map((novelty) => (
                     <div className="supplier-novelty" key={novelty.id}>
                       <strong>Novedad del proveedor</strong><span>{novelty.detail}</span>
+                      {novelty.detail_state === "awaiting_category" && (
+                        <div className="novelty-category-actions">
+                          <small>Así se verá la respuesta inmediata en WhatsApp:</small>
+                          {noveltyOptions.map(([category, label]) => (
+                            <button
+                              type="button"
+                              key={category}
+                              disabled={saving === `supplier-${shipment.id}`}
+                              onClick={() =>
+                                simulateSupplierResponse(shipment, "classify_issue", category)
+                              }
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {novelty.detail_state === "awaiting_detail" && (
+                        <div className="novelty-detail-simulator">
+                          <small>Simula la respuesta escrita al mensaje anterior:</small>
+                          <input
+                            value={noveltyDrafts[novelty.id] || ""}
+                            placeholder="Ej. SKU 8844 agotado hasta el viernes"
+                            onChange={(event) =>
+                              setNoveltyDrafts((current) => ({
+                                ...current,
+                                [novelty.id]: event.target.value,
+                              }))
+                            }
+                          />
+                          <button
+                            type="button"
+                            disabled={
+                              saving === `supplier-${shipment.id}` ||
+                              !(noveltyDrafts[novelty.id] || "").trim()
+                            }
+                            onClick={() =>
+                              simulateSupplierResponse(
+                                shipment,
+                                "provide_issue_detail",
+                                "",
+                                noveltyDrafts[novelty.id],
+                              )
+                            }
+                          >
+                            Guardar respuesta simulada
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                   <div className="shipment-fields">

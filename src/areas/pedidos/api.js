@@ -49,12 +49,14 @@ export const ordersApi = {
       data,
     });
   },
-  simulateSupplierResponse: (shipmentId, action) =>
+  simulateSupplierResponse: (shipmentId, action, category = "", detail = "") =>
     request(`/api/pedidos/shipments/${shipmentId}/supplier-response/simulate/`, {
       method: "POST",
       data: {
         action,
-        event_id: `local-ui:${shipmentId}:${action}:${crypto.randomUUID()}`,
+        category,
+        detail,
+        event_id: `local-ui:${shipmentId}:${action}:${category || "none"}:${crypto.randomUUID()}`,
       },
     }),
   messagingConfigs: () => request("/api/pedidos/messaging/configs/"),
