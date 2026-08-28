@@ -53,6 +53,7 @@ export const api = {
     return request(`/api/catalogo/workspace/column-options/?${params.toString()}`);
   },
   catalogChannelRefreshStatus: () => request("/api/catalogo/workspace/refresh-channels/"),
+  catalogConnections: () => request("/api/catalogo/workspace/connections/"),
   startCatalogChannelRefresh: () => request("/api/catalogo/workspace/refresh-channels/", { method: "POST" }),
   catalogAlignment: ({ channel = "MERCADO_LIBRE", page = 1, search = "", matchStatus = "" } = {}) => {
     const params = new URLSearchParams({ channel, page: String(page), page_size: "50" });

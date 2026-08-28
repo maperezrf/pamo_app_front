@@ -25,16 +25,86 @@ const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const DRAFT_TTL_MS = 24 * 60 * 60 * 1000;
 const tabs = [
   "Catálogo maestro",
-  "Alineación multicanal",
-  "Auditoría Sodimac",
-  "Piloto y fuentes",
-  "Enriquecimiento logístico",
-  "Panel ejecutivo",
-  "Configurador de precios",
-  "Simulador multibodega",
-  "Reglas anteriores",
-  "Shopify local",
-  "Historial",
+  "Reglas del catálogo",
+  "Conexiones",
+];
+const catalogBusinessRules = [
+  {
+    group: "Precio Shopify",
+    name: "Margen neto objetivo",
+    value: "20%",
+    explanation: "Utilidad esperada después del costo del producto, Mercado Pago, gastos administrativos, alistamiento y reserva logística.",
+    source: "Regla comercial PAMO",
+    status: "APLICADA",
+  },
+  {
+    group: "Precio Shopify",
+    name: "Reserva logística",
+    value: "4% · máximo $40.000",
+    explanation: "Se calcula sobre el precio sugerido por unidad. Nunca supera $40.000, aunque el producto tenga un precio mayor.",
+    source: "Regla comercial PAMO",
+    status: "APLICADA",
+  },
+  {
+    group: "Cobro Shopify",
+    name: "Mercado Pago",
+    value: "3,29% + $800 + IVA",
+    explanation: "Referencia pública para disponibilidad inmediata. Debe compararse con la tarifa contractual real antes de publicar precios.",
+    source: "Mercado Pago Colombia · 27/08/2026",
+    status: "POR VALIDAR",
+  },
+  {
+    group: "Gastos internos",
+    name: "Administración",
+    value: "23%",
+    explanation: "Porcentaje aplicado al precio sugerido para representar los gastos administrativos de la compañía.",
+    source: "Informe de precios revisado",
+    status: "APLICADA",
+  },
+  {
+    group: "Gastos internos",
+    name: "Alistamiento y bodegaje",
+    value: "$7.200 por unidad",
+    explanation: "Valor fijo interno. No es el envío cobrado por la transportadora y no debe duplicarse como flete.",
+    source: "Informe de precios revisado",
+    status: "APLICADA",
+  },
+  {
+    group: "Gastos internos",
+    name: "Provisión de devolución",
+    value: "$360 por unidad",
+    explanation: "Corresponde al 5% del alistamiento de $7.200; no es 5% del precio del producto.",
+    source: "Informe de precios revisado",
+    status: "APLICADA",
+  },
+  {
+    group: "Envío",
+    name: "Precio promedio de envío",
+    value: "Según banda logística",
+    explanation: "Se estima con peso, volumen, familia del producto e históricos disponibles. Sirve para análisis; la compra requiere cotización final por destino.",
+    source: "Histórico local de guías Envía",
+    status: "ESTIMADA",
+  },
+  {
+    group: "Seguridad",
+    name: "Publicación de precios",
+    value: "Desactivada",
+    explanation: "Los precios sugeridos son una simulación local. Ningún valor se publica en Shopify sin piloto y autorización separados.",
+    source: "Control de seguridad",
+    status: "BLOQUEADA",
+  },
+];
+const connectorCatalog = [
+  { code: "SHOPIFY", label: "Shopify", purpose: "Catálogo, precios e inventario", mode: "Beta · escrituras apagadas" },
+  { code: "SIIGO", label: "Siigo", purpose: "Productos, costos e inventario contable", mode: "Solo lectura" },
+  { code: "MERCADO_LIBRE", label: "Mercado Libre", purpose: "Publicaciones, comisión y envío", mode: "Solo lectura" },
+  { code: "FALABELLA", label: "Falabella", purpose: "Catálogo del canal", mode: "Solo lectura" },
+  { code: "SODIMAC", label: "Sodimac / Homecenter", purpose: "Catálogo y transporte", mode: "Fuente local" },
+  { code: "MADECENTRO", label: "Madecentro", purpose: "Catálogo comercial", mode: "Solo lectura" },
+  { code: "RAPPI", label: "Rappi", purpose: "Catálogo futuro", mode: "No conectado" },
+  { code: "ENVIA", label: "Envía", purpose: "Cotizaciones y costos de guías", mode: "Lectura habilitada" },
+  { code: "TAUMM", label: "TAUMM", purpose: "Precio e inventario del proveedor", mode: "Pendiente de conectar" },
+  { code: "BARU", label: "Barú", purpose: "Listas, costos y medidas del proveedor", mode: "Carga local" },
 ];
 const channelColumns = [
   ["SHOPIFY", "Shopify"],
@@ -1197,6 +1267,9 @@ export default function CatalogWorkspace({ user }) {
   );
   const [notice, setNotice] = useState("");
   const [channelRefresh, setChannelRefresh] = useState(null);
+  const [connectionsWorkspace, setConnectionsWorkspace] = useState(
+    () => initialCache?.workspace?.connections || null,
+  );
   const [shopifySync, setShopifySync] = useState(null);
   const [shopifySyncLoading, setShopifySyncLoading] = useState(false);
   const [shopifySyncOpen, setShopifySyncOpen] = useState(false);
@@ -1539,6 +1612,11 @@ export default function CatalogWorkspace({ user }) {
     if (result.ok) setShopifySync(result.data);
   };
 
+  const loadConnections = async () => {
+    const result = await catalogApi.connections();
+    if (result.ok) setConnectionsWorkspace(result.data);
+  };
+
   const previewShopifySync = async () => {
     if (stale || shopifySyncLoading) return;
     setShopifySyncLoading(true);
@@ -1605,6 +1683,12 @@ export default function CatalogWorkspace({ user }) {
   // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     void loadTabData(activeTab);
+  }, [activeTab]);
+  useEffect(() => {
+    if (activeTab !== "Conexiones") return undefined;
+    void loadConnections();
+    const interval = window.setInterval(() => void loadConnections(), 60_000);
+    return () => window.clearInterval(interval);
   }, [activeTab]);
   useEffect(() => {
     safeWrite(storageKeys.filters, filters);
@@ -3449,6 +3533,24 @@ export default function CatalogWorkspace({ user }) {
       {activeTab === "Historial" && (
         <HistoryPanel events={workspace?.history || []} />
       )}
+      {activeTab === "Reglas del catálogo" && (
+        <CatalogRulesPanel rules={catalogBusinessRules} />
+      )}
+      {activeTab === "Conexiones" && (
+        <ConnectionsPanel
+          statuses={workspace?.integration_statuses || []}
+          channels={workspace?.channels || []}
+          events={workspace?.history || []}
+          connections={
+            connectionsWorkspace?.connections ||
+            workspace?.connections?.connections ||
+            []
+          }
+          scheduler={
+            connectionsWorkspace?.scheduler || workspace?.connections?.scheduler
+          }
+        />
+      )}
       {detail && (
         <Suspense fallback={null}>
           <ProductDrawer
@@ -3458,6 +3560,277 @@ export default function CatalogWorkspace({ user }) {
           />
         </Suspense>
       )}
+    </div>
+  );
+}
+
+function CatalogRulesPanel({ rules }) {
+  const groups = [...new Set(rules.map((rule) => rule.group))];
+  return (
+    <section className="catalog-simple-panel catalog-rules-panel">
+      <header className="catalog-simple-header">
+        <div>
+          <span className="eyebrow">Cómo calcula hoy el catálogo</span>
+          <h2>Reglas del catálogo</h2>
+          <p>
+            Esta hoja separa las reglas aplicadas de las estimaciones y de los
+            valores que todavía necesitan validación.
+          </p>
+        </div>
+        <StatusBadge value="SIMULACIÓN LOCAL" tone="success" />
+      </header>
+      <div className="catalog-rules-summary">
+        <article>
+          <strong>20%</strong>
+          <span>margen neto objetivo</span>
+        </article>
+        <article>
+          <strong>4%</strong>
+          <span>reserva logística</span>
+        </article>
+        <article>
+          <strong>$40.000</strong>
+          <span>tope de reserva por unidad</span>
+        </article>
+        <article>
+          <strong>0</strong>
+          <span>escrituras externas</span>
+        </article>
+      </div>
+      {groups.map((group) => (
+        <section className="catalog-rule-group" key={group}>
+          <h3>{group}</h3>
+          <div className="catalog-rule-grid">
+            {rules.filter((rule) => rule.group === group).map((rule) => (
+              <article key={rule.name} data-status={rule.status}>
+                <div className="catalog-rule-title">
+                  <strong>{rule.name}</strong>
+                  <StatusBadge
+                    value={rule.status.replaceAll("_", " ")}
+                    tone={
+                      rule.status === "APLICADA"
+                        ? "success"
+                        : rule.status === "ESTIMADA" || rule.status === "POR VALIDAR"
+                          ? "warning"
+                          : "neutral"
+                    }
+                  />
+                </div>
+                <b>{rule.value}</b>
+                <p>{rule.explanation}</p>
+                <small>Fuente: {rule.source}</small>
+              </article>
+            ))}
+          </div>
+        </section>
+      ))}
+      <div className="catalog-rule-note">
+        <strong>Lectura práctica</strong>
+        <span>
+          El precio sugerido ya incluye los gastos conocidos y busca dejar el
+          20% neto. El envío promedio orienta el análisis, pero no reemplaza la
+          cotización final por ciudad y paquete.
+        </span>
+      </div>
+    </section>
+  );
+}
+
+function connectionSummary(connector, statuses, channels) {
+  const rows = statuses.filter(
+    (item) => String(item.system || "").toUpperCase() === connector.code,
+  );
+  const channel = channels.find(
+    (item) => String(item.code || "").toUpperCase() === connector.code,
+  );
+  const hasAvailable = rows.some((item) => item.status === "AVAILABLE");
+  const hasIncomplete = rows.some((item) =>
+    ["PARTIAL", "BLOCKED", "MISSING"].includes(item.status),
+  );
+  let status = "PENDIENTE";
+  if (hasAvailable && hasIncomplete) status = "PARCIAL";
+  else if (hasAvailable || channel?.connected) status = "DISPONIBLE";
+  else if (rows.some((item) => item.status === "BLOCKED")) status = "BLOQUEADA";
+
+  const dates = rows
+    .flatMap((item) => [item.last_success_at, item.observed_at])
+    .filter(Boolean)
+    .map((value) => new Date(value))
+    .filter((value) => !Number.isNaN(value.getTime()));
+  const latest = dates.length
+    ? new Date(Math.max(...dates.map((value) => value.getTime())))
+    : null;
+  const recordCount = rows.reduce(
+    (maximum, item) => Math.max(maximum, Number(item.record_count) || 0),
+    0,
+  );
+  return {
+    ...connector,
+    rows,
+    status,
+    recordCount,
+    latest,
+  };
+}
+
+function localDateTime(value, fallback = "Sin registro") {
+  if (!value) return fallback;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? fallback
+    : date.toLocaleString("es-CO");
+}
+
+function ConnectionsPanel({ statuses, channels, events, connections, scheduler }) {
+  const connectionRows = connections.length
+    ? connections
+    : connectorCatalog.map((connector) =>
+        connectionSummary(connector, statuses, channels),
+      );
+  return (
+    <section className="catalog-simple-panel catalog-connections-panel">
+      <header className="catalog-simple-header">
+        <div>
+          <span className="eyebrow">Estado sencillo de integraciones</span>
+          <h2>Conexiones</h2>
+          <p>
+            Qué fuente está disponible, cuándo se leyó por última vez y si hoy
+            funciona como lectura, carga local o conexión pendiente.
+          </p>
+        </div>
+        <div className="connection-header-status">
+          <StatusBadge value="externalWrites=0" tone="success" />
+          <small>
+            Actualización de esta hoja: cada minuto
+          </small>
+        </div>
+      </header>
+      <div className="connection-scheduler-status">
+        <div>
+          <span className="eyebrow">Planificador de lecturas</span>
+          <strong>{scheduler?.status_label || "No iniciado"}</strong>
+          <small>{scheduler?.message || "Sin ciclo registrado."}</small>
+        </div>
+        <dl>
+          <div>
+            <dt>Último pulso</dt>
+            <dd>{localDateTime(scheduler?.last_heartbeat_at)}</dd>
+          </div>
+          <div>
+            <dt>Último ciclo correcto</dt>
+            <dd>{localDateTime(scheduler?.last_success_at)}</dd>
+          </div>
+          <div>
+            <dt>Frecuencia</dt>
+            <dd>{scheduler?.cadence_label || "Cada 6 horas"}</dd>
+          </div>
+        </dl>
+      </div>
+      <div className="catalog-connection-grid">
+        {connectionRows.map((connection) => (
+          <article key={connection.code} data-status={connection.status}>
+            <header>
+              <div>
+                <strong>{connection.label}</strong>
+                <span>{connection.purpose}</span>
+              </div>
+              <StatusBadge
+                value={connection.status_label || connection.status}
+                tone={
+                  ["CONNECTED", "DISPONIBLE", "FILE_AVAILABLE"].includes(connection.status)
+                    ? "success"
+                    : ["PARTIAL", "PARCIAL", "STALE"].includes(connection.status)
+                      ? "warning"
+                      : "neutral"
+                }
+              />
+            </header>
+            <dl>
+              <div>
+                <dt>Última lectura</dt>
+                <dd>{localDateTime(connection.last_attempt_at || connection.latest, "Sin lectura registrada")}</dd>
+              </div>
+              <div>
+                <dt>Última sincronización correcta</dt>
+                <dd>{localDateTime(connection.last_success_at, "Sin sincronización confirmada")}</dd>
+              </div>
+              <div>
+                <dt>Último archivo</dt>
+                <dd>{localDateTime(connection.last_file_upload_at, "No aplica o no registrado")}</dd>
+              </div>
+              <div>
+                <dt>Registros</dt>
+                <dd>{connection.record_count || connection.recordCount || "—"}</dd>
+              </div>
+              <div>
+                <dt>Modo actual</dt>
+                <dd>{connection.mode}</dd>
+              </div>
+              <div>
+                <dt>Método</dt>
+                <dd>{connection.strategy || "Lectura local"}</dd>
+              </div>
+              {connection.webhook_state && (
+                <div>
+                  <dt>Webhook</dt>
+                  <dd>
+                    {connection.webhook_state === "NO_INSTALADO_EN_ESTE_MODULO"
+                      ? "No instalado en este módulo"
+                      : connection.webhook_state}
+                  </dd>
+                </div>
+              )}
+              <div>
+                <dt>Próxima revisión</dt>
+                <dd>{localDateTime(connection.next_scheduled_at, "Sin tarea programada")}</dd>
+              </div>
+            </dl>
+          </article>
+        ))}
+      </div>
+      <div className="connection-legend">
+        <span><b>Conectada:</b> existe una lectura vigente y verificable.</span>
+        <span><b>Parcial:</b> algunos datos existen y otros siguen pendientes.</span>
+        <span><b>Desactualizada:</b> hubo una lectura correcta, pero ya superó dos ciclos.</span>
+        <span><b>Desconectada:</b> todavía no existe una lectura verificable en este catálogo.</span>
+      </div>
+      <details className="connection-technical-details">
+        <summary>Ver detalle técnico e historial</summary>
+        <PilotConnectionDetail statuses={statuses} />
+        <HistoryPanel events={events} />
+      </details>
+    </section>
+  );
+}
+
+function PilotConnectionDetail({ statuses }) {
+  if (!statuses.length) {
+    return <div className="empty-state">No hay lecturas técnicas registradas.</div>;
+  }
+  return (
+    <div className="source-status-table connection-source-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Sistema</th>
+            <th>Dato</th>
+            <th>Estado</th>
+            <th>Registros</th>
+            <th>Explicación</th>
+          </tr>
+        </thead>
+        <tbody>
+          {statuses.map((item) => (
+            <tr key={`${item.system}-${item.capability}`}>
+              <td><strong>{item.system}</strong></td>
+              <td>{String(item.capability || "").replaceAll("_", " ")}</td>
+              <td>{item.status_label || item.status}</td>
+              <td>{item.record_count ?? "—"}</td>
+              <td>{item.message || "Sin detalle"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

@@ -409,6 +409,55 @@ dt { color:var(--catalog-muted); } dd { margin:0; font-weight:600; }
 .history-panel article { display:flex; justify-content:space-between; gap:16px; border:1px solid var(--catalog-line); border-radius:9px; background:#fff; padding:12px 14px; margin-bottom:7px; }
 .history-panel article > div { display:grid; gap:4px; }
 .history-panel article span,.history-panel article small { color:var(--catalog-muted); font-size:9px; }
+.catalog-simple-panel { display:grid; gap:14px; margin-top:12px; padding:16px; border:1px solid #d7e1eb; border-radius:10px; background:#fff; }
+.catalog-simple-header { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; }
+.catalog-simple-header h2 { margin:3px 0 5px; color:#07182d; font-size:21px; }
+.catalog-simple-header p { max-width:760px; margin:0; color:#66798d; font-size:10px; line-height:1.5; }
+.connection-header-status { display:grid; justify-items:end; gap:5px; }
+.connection-header-status small { color:#718296; font-size:8px; }
+.connection-scheduler-status { display:grid; grid-template-columns:minmax(220px,1fr) 2fr; gap:16px; align-items:center; border:1px solid #cfe0f1; border-radius:8px; background:#f5f9fd; padding:12px; }
+.connection-scheduler-status>div { display:grid; gap:3px; }
+.connection-scheduler-status>div>strong { color:#153d61; font-size:13px; }
+.connection-scheduler-status>div>small { color:#687f95; font-size:8px; }
+.connection-scheduler-status dl { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:0; }
+.connection-scheduler-status dl div { display:grid; gap:3px; }
+.connection-scheduler-status dt { color:#8291a1; font-size:7px; font-weight:800; text-transform:uppercase; }
+.connection-scheduler-status dd { margin:0; color:#29455f; font-size:9px; }
+.catalog-rules-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.catalog-rules-summary article { display:grid; gap:3px; padding:12px; border:1px solid #dbe6e0; border-radius:8px; background:#f7fcf9; }
+.catalog-rules-summary strong { color:#0c6242; font-size:20px; }
+.catalog-rules-summary span { color:#62776c; font-size:9px; }
+.catalog-rule-group { display:grid; gap:8px; }
+.catalog-rule-group h3 { margin:0; color:#294159; font-size:12px; }
+.catalog-rule-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.catalog-rule-grid article { display:grid; gap:7px; border:1px solid #dfe6ed; border-left:4px solid #23855d; border-radius:8px; background:#fbfcfd; padding:12px; }
+.catalog-rule-grid article[data-status="ESTIMADA"],.catalog-rule-grid article[data-status="POR VALIDAR"] { border-left-color:#d78d22; }
+.catalog-rule-grid article[data-status="BLOQUEADA"] { border-left-color:#75869a; }
+.catalog-rule-title { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.catalog-rule-title strong { color:#122e48; font-size:11px; }
+.catalog-rule-grid article>b { color:#0a6846; font-size:17px; }
+.catalog-rule-grid article p { margin:0; color:#5e7185; font-size:9px; line-height:1.45; }
+.catalog-rule-grid article small { color:#8090a0; font-size:8px; }
+.catalog-rule-note { display:flex; gap:12px; border-radius:8px; background:#eef6ff; padding:11px 13px; color:#385a79; font-size:9px; line-height:1.45; }
+.catalog-rule-note strong { color:#123c60; white-space:nowrap; }
+.catalog-connection-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.catalog-connection-grid article { display:grid; gap:10px; border:1px solid #dfe6ed; border-left:4px solid #8796a6; border-radius:8px; background:#fbfcfd; padding:12px; }
+.catalog-connection-grid article[data-status="CONNECTED"],.catalog-connection-grid article[data-status="DISPONIBLE"],.catalog-connection-grid article[data-status="FILE_AVAILABLE"] { border-left-color:#23855d; }
+.catalog-connection-grid article[data-status="PARTIAL"],.catalog-connection-grid article[data-status="PARCIAL"],.catalog-connection-grid article[data-status="STALE"] { border-left-color:#d78d22; }
+.catalog-connection-grid article>header { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.catalog-connection-grid article>header>div { display:grid; gap:3px; }
+.catalog-connection-grid article strong { color:#102d47; font-size:11px; }
+.catalog-connection-grid article header span { color:#718296; font-size:8px; }
+.catalog-connection-grid dl { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin:0; }
+.catalog-connection-grid dl div { display:grid; align-content:start; gap:3px; }
+.catalog-connection-grid dt { color:#8290a0; font-size:7px; font-weight:800; text-transform:uppercase; }
+.catalog-connection-grid dd { margin:0; color:#30475e; font-size:9px; overflow-wrap:anywhere; }
+.connection-legend { display:flex; flex-wrap:wrap; gap:8px 18px; padding:10px 12px; border-radius:8px; background:#f3f6f9; color:#617386; font-size:8px; }
+.connection-technical-details { border:1px solid #dce4ec; border-radius:8px; background:#fafbfd; padding:10px; }
+.connection-technical-details>summary { cursor:pointer; color:#294863; font-size:10px; font-weight:800; }
+.connection-technical-details[open]>summary { margin-bottom:10px; }
+.connection-source-table { max-height:420px; overflow:auto; margin-bottom:12px; }
+.connection-source-table table { min-width:760px; }
 .physical-panel { display:grid; gap:12px; }
 .physical-metrics { margin-top:0; }
 .physical-controls { display:flex; align-items:end; gap:10px; border:1px solid var(--catalog-line); border-radius:10px; background:#fff; padding:12px; }
@@ -560,6 +609,13 @@ dt { color:var(--catalog-muted); } dd { margin:0; font-weight:600; }
   .catalog-result-line { flex-direction:column; align-items:stretch; }
   .catalog-result-line > span { width:100%; line-height:1.45; }
   .view-controls { width:100%; flex-wrap:wrap; }
+  .catalog-simple-header { flex-direction:column; }
+  .connection-header-status { justify-items:start; }
+  .connection-scheduler-status { grid-template-columns:1fr; }
+  .connection-scheduler-status dl { grid-template-columns:1fr; }
+  .catalog-rules-summary,.catalog-rule-grid,.catalog-connection-grid { grid-template-columns:1fr; }
+  .catalog-connection-grid dl { grid-template-columns:1fr; }
+  .catalog-rule-note { flex-direction:column; }
 }
 @media (max-width:520px) {
   .catalog-heading h1 { font-size:19px; }

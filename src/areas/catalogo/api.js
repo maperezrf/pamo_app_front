@@ -5,6 +5,7 @@ export const catalogApi = {
     api.catalogWorkspace(page, filters, columnFilters, tableSort, signal),
   columnOptions: api.catalogColumnOptions,
   channelRefreshStatus: api.catalogChannelRefreshStatus,
+  connections: api.catalogConnections,
   startChannelRefresh: api.startCatalogChannelRefresh,
   alignment: api.catalogAlignment,
   executive: api.catalogExecutiveSimulation,
