@@ -56,6 +56,7 @@ export const api = {
   catalogConnections: () => request("/api/catalogo/workspace/connections/"),
   shippingDeliveryWorkspace: (signal) => request("/api/catalogo/shipping-delivery/workspace/", { signal }),
   simulateStandardShipping: (body) => request("/api/catalogo/shipping-delivery/workspace/", { method: "POST", body }),
+  estimateCatalogShipping: (body) => request("/api/catalogo/shipping-delivery/estimate/", { method: "POST", body }),
   startCatalogChannelRefresh: () => request("/api/catalogo/workspace/refresh-channels/", { method: "POST" }),
   catalogAlignment: ({ channel = "MERCADO_LIBRE", page = 1, search = "", matchStatus = "" } = {}) => {
     const params = new URLSearchParams({ channel, page: String(page), page_size: "50" });

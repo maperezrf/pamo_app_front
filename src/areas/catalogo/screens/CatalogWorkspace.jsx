@@ -351,6 +351,17 @@ const shopifyInventoryTotalFor = (row) => {
   );
 };
 
+const shopifyShippingOriginFor = (row) => {
+  const locations = shopifyInventoryLocationsFor(row).filter(
+    (location) =>
+      location.location_active !== false && Number(location.available || 0) > 0,
+  );
+  if (!locations.length) return null;
+  return (
+    locations.find((location) => location.fulfills_online_orders) || locations[0]
+  );
+};
+
 const inventoryQuantity = (value) =>
   new Intl.NumberFormat("es-CO", { maximumFractionDigits: 3 }).format(
     Number(value || 0),
@@ -901,6 +912,7 @@ function ChannelMetricCell({ row, channel, metric, pinned = false }) {
       ? average.amount
       : shipping?.seller_estimate;
     const buyerAmount = shipping?.buyer_charge;
+    const shippingOrigin = channel === "SHOPIFY" ? shopifyShippingOriginFor(row) : null;
     const modalityDetail = modalityLabels.length
       ? ` Modalidades: ${modalityLabels.join(" · ")}.`
       : "";
@@ -928,6 +940,7 @@ function ChannelMetricCell({ row, channel, metric, pinned = false }) {
           </span>
         )}
         {usesAverage && <small>{shippingBandLabel(average)}</small>}
+        {shippingOrigin && <small>Sale de {shippingOrigin.location_name}</small>}
         {noCoverage && (
           <strong>
             No disponible
@@ -3291,6 +3304,11 @@ export default function CatalogWorkspace({ user }) {
                             {shippingBandLabel(row.shipping.average_shipping)}
                             {" · estimado"}
                           </small>
+                          {shopifyShippingOriginFor(row) && (
+                            <small>
+                              Sale de {shopifyShippingOriginFor(row).location_name}
+                            </small>
+                          )}
                         </td>
                       )}
                       {shows("siigo") && (
