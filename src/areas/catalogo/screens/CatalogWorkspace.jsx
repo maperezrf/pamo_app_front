@@ -3752,16 +3752,21 @@ function ConnectionsPanel({ statuses, channels, events, connections, scheduler }
                 <strong>{connection.label}</strong>
                 <span>{connection.purpose}</span>
               </div>
-              <StatusBadge
-                value={connection.status_label || connection.status}
-                tone={
-                  ["CONNECTED", "DISPONIBLE", "FILE_AVAILABLE"].includes(connection.status)
-                    ? "success"
-                    : ["PARTIAL", "PARCIAL", "STALE"].includes(connection.status)
-                      ? "warning"
-                      : "neutral"
-                }
-              />
+              <div className="connection-status-stack">
+                <StatusBadge
+                  value={connection.status_label || connection.status}
+                  tone={
+                    ["CONNECTED", "DISPONIBLE", "FILE_AVAILABLE"].includes(connection.status)
+                      ? "success"
+                      : ["PARTIAL", "PARCIAL", "STALE"].includes(connection.status)
+                        ? "warning"
+                        : "neutral"
+                  }
+                />
+                {!!connection.pending_capabilities?.length && (
+                  <small>{connection.coverage_label}</small>
+                )}
+              </div>
             </header>
             <dl>
               <div>
@@ -3807,8 +3812,8 @@ function ConnectionsPanel({ statuses, channels, events, connections, scheduler }
         ))}
       </div>
       <div className="connection-legend">
-        <span><b>Conectada:</b> existe una lectura vigente y verificable.</span>
-        <span><b>Parcial:</b> algunos datos existen y otros siguen pendientes.</span>
+        <span><b>Conectada:</b> la conexión principal tiene una lectura vigente y verificable.</span>
+        <span><b>Datos pendientes:</b> la conexión funciona, pero faltan campos o funciones secundarias.</span>
         <span><b>Desactualizada:</b> hubo una lectura correcta, pero ya superó dos ciclos.</span>
         <span><b>Desconectada:</b> todavía no existe una lectura verificable en este catálogo.</span>
       </div>

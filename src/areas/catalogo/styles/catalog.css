@@ -446,6 +446,8 @@ dt { color:var(--catalog-muted); } dd { margin:0; font-weight:600; }
 .catalog-connection-grid article[data-status="PARTIAL"],.catalog-connection-grid article[data-status="PARCIAL"],.catalog-connection-grid article[data-status="STALE"] { border-left-color:#d78d22; }
 .catalog-connection-grid article>header { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
 .catalog-connection-grid article>header>div { display:grid; gap:3px; }
+.catalog-connection-grid .connection-status-stack { justify-items:end; text-align:right; }
+.catalog-connection-grid .connection-status-stack small { color:#a26414; font-size:7px; font-weight:700; }
 .catalog-connection-grid article strong { color:#102d47; font-size:11px; }
 .catalog-connection-grid article header span { color:#718296; font-size:8px; }
 .catalog-connection-grid dl { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin:0; }
