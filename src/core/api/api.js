@@ -1,4 +1,4 @@
-import httpClient from "./lib/httpClient";
+import httpClient from "./httpClient";
 
 async function request(path, { method = "GET", body } = {}) {
   try {

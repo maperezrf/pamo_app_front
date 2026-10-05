@@ -1,76 +1,24 @@
-# CLAUDE.md — Frontend (pamo_app_front)
+# CLAUDE.md — Frontend Pamo
 
-Guía para Claude Code (o cualquier agente/IDE) al trabajar en este
-repositorio: **React 19 + Vite** para **Pamo**. Este repo es independiente
-de `Pamo_app_back` (backend Django) y del repo del servidor MCP
-`governance-pamo` — cada uno tiene su propio ciclo de vida y su propio
-`CLAUDE.md`.
+Antes de planear, leer código o editar, leer [`docs/INDEX.md`](docs/INDEX.md)
+y la arquitectura, app, patrón y contrato aplicables. Buscar una capacidad
+reutilizable documentada antes de crear una nueva.
 
-## Consulta obligatoria de lineamientos (MCP `governance-pamo`)
+Consultar código solo después para validar el estado real o resolver un vacío
+puntual. Si el código y la documentación difieren, comprobar el comportamiento
+y actualizar el documento correspondiente en el mismo cambio cuando aplique.
 
-**Regla no negociable:** ante cualquier pedido de código — nuevo o
-modificación, sin importar lo simple o urgente que parezca — lo primero
-que se hace, antes de leer el código existente, antes de proponer un plan
-y antes de escribir una sola línea, es consultar el servidor MCP
-`governance-pamo`. No resolver el pedido por cuenta propia usando solo el
-conocimiento general del modelo sin haber pasado por este paso primero. Si
-todavía no se consultó el MCP en la conversación actual, hacerlo ahora
-antes de continuar.
+La memoria privada de Claude, los resúmenes del IDE y el historial de chat no
+son fuente de verdad. El conocimiento que otro agente necesite debe quedar en
+la documentación versionada de este repositorio.
 
-Consultar el servidor MCP `governance-pamo` en este orden:
+- React 19 + Vite; axios se usa exclusivamente mediante `src/core/api/httpClient.js`.
+- Identidad visual: MUI + tema centralizado en `src/theme/` (ver
+  `docs/patterns/THEME.md`). No hex sueltos en componentes; consumir tokens
+  del tema.
+- El contrato HTTP pertenece al backend; el frontend no inventa endpoints.
+- Las variables `VITE_*` son públicas y no contienen secretos.
+- Los cambios de API, componente compartido, hook, regla de estado o flujo
+  no obvio actualizan documentación relevante antes de cerrar.
 
-1. `obtener_mapa_documentacion` — índice de toda la documentación.
-2. `obtener_lineamientos_generales` — siempre.
-3. `obtener_lineamientos_frontend` — arquitectura React/Vite: pantallas por
-   área, cliente HTTP, estado, variables de entorno, contrato con el
-   backend, lint, checklist.
-4. `obtener_lineamientos_git` — al ramear, commitear o abrir un PR.
-
-Si la tarea no está cubierta por ninguno de estos documentos, seguir el
-conocimiento general del modelo y las convenciones ya presentes en el
-código — no bloquear el trabajo por falta de lineamiento explícito.
-
-`docs/GOVERNANCE.md` en este repo es solo un puntero corto a lo de arriba,
-no un documento a mantener en paralelo.
-
-## Stack
-
-- React 19 + Vite.
-- `@react-oauth/google` para login.
-- Cliente HTTP: **axios**, instancia única en `src/lib/httpClient.js`
-  (`baseURL` desde `VITE_API_BASE_URL`, `withCredentials: true`,
-  interceptor que agrega `X-CSRFToken`). `src/api.js` es un wrapper delgado
-  sobre esa instancia con una función por endpoint.
-- Lint: `oxlint` (`npm run lint`).
-
-## Estructura actual
-
-```
-src/
-  api.js              wrapper delgado sobre lib/httpClient.js, funciones por endpoint
-  lib/httpClient.js    instancia única de axios
-  screens/             Login, Dashboard, Unauthorized
-  shared/layout/        AppShell, Sidebar, Topbar, Footer, BrandMark
-```
-
-Todavía no existe la carpeta `areas/<área>/` que describen los
-lineamientos del MCP — solo está construida el área Accesos y Seguridad,
-implementada directo en `screens/`. Al agregar una segunda área de
-negocio, adoptar recién ahí la estructura por área (`areas/<área>/screens`,
-`areas/<área>/api.js`) en vez de seguir creciendo `screens/` como carpeta
-plana.
-
-## Flujo de desarrollo
-
-```bash
-cp .env.example .env           # completar VITE_GOOGLE_CLIENT_ID
-npm install
-npm run dev                    # http://localhost:5173
-npm run lint                   # oxlint
-```
-
-## Variables de entorno
-
-`.env` (ver `.env.example`): `VITE_API_BASE_URL`, `VITE_GOOGLE_CLIENT_ID`.
-Todo lo que está en una variable `VITE_*` es público — nunca un secreto
-real ahí (ver `obtener_lineamientos_frontend` del MCP).
+Ver `AGENTS.md` para reglas operativas compartidas.

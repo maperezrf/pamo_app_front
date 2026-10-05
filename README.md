@@ -9,7 +9,7 @@ Repo hermano: **backend** en [`Pamo_app_back`](https://github.com/maperezrf/Pamo
 (Django REST Framework). Backend y frontend son repos separados que se
 despliegan de forma independiente.
 
-**Antes de escribir código, leer [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md)**
+**Antes de escribir código, leer [`docs/INDEX.md`](docs/INDEX.md)**
 — reglas de arquitectura, estructura por áreas, cliente HTTP y el contrato
 con el backend. Es de lectura obligatoria tanto para quien programa a mano
 como para quien dirige el desarrollo con IA.
@@ -18,7 +18,8 @@ como para quien dirige el desarrollo con IA.
 
 - React 19 + Vite
 - `@react-oauth/google` (login con Google)
-- axios (cliente HTTP único hacia el backend — ver `docs/GOVERNANCE.md` §4)
+- axios (cliente HTTP único hacia el backend — ver
+  [`docs/patterns/HTTP_CLIENT.md`](docs/patterns/HTTP_CLIENT.md))
 - `oxlint`
 
 ## 1. Credenciales de Google OAuth
@@ -45,7 +46,7 @@ Queda en `http://localhost:5173`. Necesita el backend corriendo en paralelo
 - `VITE_GOOGLE_CLIENT_ID` — mismo Client ID configurado en el backend.
 
 Todo lo que empiece con `VITE_` termina público en el bundle del navegador
-— nunca poner un secreto real ahí (ver `docs/GOVERNANCE.md` §6).
+— nunca poner un secreto real ahí.
 
 ## Comandos
 
@@ -56,6 +57,7 @@ npm run preview   # previsualizar el build
 npm run lint      # oxlint
 ```
 
-Ver `docs/GOVERNANCE.md` §3 para en qué área va cada pantalla nueva, §4
-para el cliente HTTP, y §7 para el contrato con el backend (manejo de
-errores, endpoints públicos, CORS/cookies entre dominios).
+Ver [`docs/architecture/OVERVIEW.md`](docs/architecture/OVERVIEW.md) para
+pantallas y estructura, y
+[`docs/contracts/API_CONSUMPTION.md`](docs/contracts/API_CONSUMPTION.md) para
+el contrato con backend.

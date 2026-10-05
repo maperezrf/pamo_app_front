@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
-import { api } from "./api";
-import Dashboard from "./screens/Dashboard";
-import Login from "./screens/Login";
-import Prototipos from "./screens/Prototipos";
-import Unauthorized from "./screens/Unauthorized";
-import AppShell from "./shared/layout/AppShell";
+import { Typography } from "@mui/material";
+import { api } from "./core/api/api";
+import AppShell from "./app/layouts/AppShell";
+import LoginPage from "./modules/access/pages/LoginPage";
+import UnauthorizedPage from "./modules/access/pages/UnauthorizedPage";
+import HomePage from "./modules/home/pages/HomePage";
+import PrototiposPage from "./modules/home/pages/PrototiposPage";
 
 // authed: null = verificando sesión, false = sin sesión, true = con sesión
 export default function App() {
@@ -43,7 +44,11 @@ export default function App() {
   };
 
   if (authed === null) {
-    return <p className="loading-text">Cargando…</p>;
+    return (
+      <Typography color="textSecondary" fontSize={14}>
+        Cargando…
+      </Typography>
+    );
   }
 
   return (
@@ -54,7 +59,7 @@ export default function App() {
           authed ? (
             <Navigate to="/" replace />
           ) : (
-            <Login
+            <LoginPage
               onAuthorized={(loggedUser) => {
                 setUser(loggedUser);
                 setAuthed(true);
@@ -68,7 +73,7 @@ export default function App() {
       />
       <Route
         path="/unauthorized"
-        element={<Unauthorized onBack={() => navigate("/login")} />}
+        element={<UnauthorizedPage onBack={() => navigate("/login")} />}
       />
       <Route
         element={
@@ -79,8 +84,8 @@ export default function App() {
           )
         }
       >
-        <Route path="/" element={<Dashboard user={user} />} />
-        <Route path="/prototipos" element={<Prototipos />} />
+        <Route path="/" element={<HomePage user={user} />} />
+        <Route path="/prototipos" element={<PrototiposPage />} />
       </Route>
     </Routes>
   );
