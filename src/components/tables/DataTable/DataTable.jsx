@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
@@ -10,6 +11,7 @@ import {
 import {
   Box,
   Button,
+  IconButton,
   LinearProgress,
   MenuItem,
   Paper,
@@ -27,6 +29,7 @@ import {
 // Modo cliente (por defecto): filtro, orden y paginación sobre `data`.
 // Modo servidor (`pagination` presente): `data` es solo la página actual; la
 // pantalla es dueña de la página y los filtros, y la tabla solo los muestra.
+// Con `renderExpanded`, cada fila es un acordeón: un clic la despliega.
 // Ver docs/patterns/DATA_TABLE.md.
 export default function DataTable({
   columns,
@@ -34,10 +37,12 @@ export default function DataTable({
   emptyMessage = "Sin resultados.",
   pagination,
   loading = false,
-  onRowClick,
+  renderExpanded,
   getRowId,
 }) {
   const isServer = Boolean(pagination);
+  const canExpand = Boolean(renderExpanded);
+  const columnCount = columns.length + (canExpand ? 1 : 0);
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
@@ -46,6 +51,7 @@ export default function DataTable({
     columns,
     getRowId,
     getCoreRowModel: getCoreRowModel(),
+    ...(canExpand && { getRowCanExpand: () => true, getExpandedRowModel: getExpandedRowModel() }),
     ...(isServer
       ? { manualPagination: true, enableSorting: false }
       : {
@@ -82,6 +88,7 @@ export default function DataTable({
           <TableHead>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
+                {canExpand && <TableCell sx={{ width: 40, pr: 0 }} />}
                 {headerGroup.headers.map((header) => {
                   const canSort = header.column.getCanSort();
                   const sortDir = header.column.getIsSorted();
@@ -119,25 +126,54 @@ export default function DataTable({
           <TableBody>
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={columns.length} align="center" sx={{ color: "text.secondary", py: 3 }}>
+                <TableCell colSpan={columnCount} align="center" sx={{ color: "text.secondary", py: 3 }}>
                   {loading ? "Cargando…" : emptyMessage}
                 </TableCell>
               </TableRow>
             )}
-            {rows.map((row) => (
-              <TableRow
-                key={row.id}
-                hover
-                onClick={onRowClick ? () => onRowClick(row.original) : undefined}
-                sx={onRowClick ? { cursor: "pointer" } : undefined}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} align={cell.column.columnDef.meta?.align}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
+            {rows.map((row) => {
+              const expanded = canExpand && row.getIsExpanded();
+              return (
+                <Fragment key={row.id}>
+                  <TableRow
+                    hover
+                    onClick={canExpand ? row.getToggleExpandedHandler() : undefined}
+                    sx={{
+                      ...(canExpand && { cursor: "pointer" }),
+                      ...(expanded && { "& > td": { borderBottom: 0 } }),
+                    }}
+                  >
+                    {canExpand && (
+                      <TableCell sx={{ width: 40, pr: 0 }}>
+                        <IconButton
+                          size="small"
+                          aria-label={expanded ? "Contraer" : "Desplegar"}
+                          aria-expanded={expanded}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            row.toggleExpanded();
+                          }}
+                        >
+                          <Chevron open={expanded} />
+                        </IconButton>
+                      </TableCell>
+                    )}
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} align={cell.column.columnDef.meta?.align}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                  {expanded && (
+                    <TableRow>
+                      <TableCell colSpan={columnCount} sx={{ bgcolor: "background.default", py: 2 }}>
+                        {renderExpanded(row.original)}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
@@ -156,6 +192,25 @@ export default function DataTable({
         />
       )}
     </Paper>
+  );
+}
+
+function Chevron({ open }) {
+  return (
+    <Box
+      component="svg"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      sx={{
+        width: 18,
+        height: 18,
+        fill: "currentColor",
+        transition: "transform 150ms",
+        transform: open ? "rotate(90deg)" : "none",
+      }}
+    >
+      <path d="M9 6l6 6-6 6-1.4-1.4L12.2 12 7.6 7.4z" />
+    </Box>
   );
 }
 

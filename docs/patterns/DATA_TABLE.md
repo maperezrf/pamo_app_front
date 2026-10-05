@@ -46,7 +46,9 @@ Ejemplo: `OrdersPage`.
 - `emptyMessage`: texto sin filas.
 - `loading`: muestra una barra de progreso y atenúa las filas actuales
   (no las borra, para que la tabla no salte entre páginas).
-- `onRowClick(row.original)`: hace clicable la fila, por ejemplo para abrir
-  un detalle.
+- `renderExpanded(row.original)`: convierte cada fila en un acordeón. Un
+  clic en la fila o en la flecha de la primera columna despliega debajo lo
+  que devuelve la función. Un enlace o botón dentro de una celda debe llamar
+  `e.stopPropagation()` para no desplegar la fila.
 - `getRowId`: id estable de la fila (recomendado cuando los datos vienen
   del backend).

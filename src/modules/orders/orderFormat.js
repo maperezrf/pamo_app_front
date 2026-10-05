@@ -79,6 +79,20 @@ export function warehouse(fulfillment) {
   return null;
 }
 
+// Admin de Shopify de la tienda (`VITE_SHOPIFY_ADMIN_URL`, ej.
+// https://admin.shopify.com/store/<tienda>). Sin configurar → sin enlaces.
+const SHOPIFY_ADMIN_URL = (import.meta.env?.VITE_SHOPIFY_ADMIN_URL ?? "").replace(/\/+$/, "");
+
+export function shopifyOrderUrl(shopifyOrderId) {
+  return SHOPIFY_ADMIN_URL && shopifyOrderId ? `${SHOPIFY_ADMIN_URL}/orders/${shopifyOrderId}` : null;
+}
+
+// Las líneas locales no guardan el id del producto: se abre la búsqueda de
+// productos del admin por SKU.
+export function shopifyProductSearchUrl(sku) {
+  return SHOPIFY_ADMIN_URL && sku ? `${SHOPIFY_ADMIN_URL}/products?query=${encodeURIComponent(sku)}` : null;
+}
+
 export function customerName(customer) {
   const name = [customer?.first_name, customer?.last_name].filter(Boolean).join(" ");
   return name || "—";

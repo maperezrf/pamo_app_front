@@ -63,3 +63,8 @@ aparece la necesidad concreta, no antes.
 Una pantalla autenticada debe vivir dentro de `AppShell`, usar el menú
 entregado por backend y conservar rutas protegidas. No duplicar el estado de
 sesión en cada pantalla.
+
+Las rutas de React Router y los valores que viajan en la URL (parámetros,
+pestañas) se escriben en inglés (`/orders`, `?tab=not-created`); los textos
+que ve la persona van en español. El `path` del menú en
+`backend/accounts/menu_config.py` debe coincidir con la ruta.

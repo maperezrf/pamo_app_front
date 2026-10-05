@@ -44,6 +44,9 @@ Queda en `http://localhost:5173`. Necesita el backend corriendo en paralelo
 
 - `VITE_API_BASE_URL` — URL base de la API del backend.
 - `VITE_GOOGLE_CLIENT_ID` — mismo Client ID configurado en el backend.
+- `VITE_SHOPIFY_ADMIN_URL` — admin de la tienda de Shopify
+  (`https://admin.shopify.com/store/<tienda>`), para los enlaces de pedidos
+  y productos. Opcional: sin ella no hay enlaces.
 
 Todo lo que empiece con `VITE_` termina público en el bundle del navegador
 — nunca poner un secreto real ahí.

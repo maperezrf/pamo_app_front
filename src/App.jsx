@@ -85,7 +85,7 @@ export default function App() {
         }
       >
         <Route path="/" element={<HomePage user={user} />} />
-        <Route path="/pedidos" element={<OrdersPage />} />
+        <Route path="/orders" element={<OrdersPage />} />
       </Route>
     </Routes>
   );

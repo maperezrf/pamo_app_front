@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Alert, Box, Tab, Tabs, Typography } from "@mui/material";
+import { Alert, Box, Link, Tab, Tabs, Typography } from "@mui/material";
 import { api } from "../../../core/api/api";
 import DataTable from "../../../components/tables/DataTable";
 import StatusChip from "../../../components/data-display/StatusChip";
 import OrderFilters from "../components/OrderFilters";
-import OrderDetailDrawer from "../components/OrderDetailDrawer";
+import OrderExpandedDetail from "../components/OrderExpandedDetail";
 import MarketplaceLabel from "../components/MarketplaceLabel";
 import {
   customerName,
@@ -14,12 +14,13 @@ import {
   formatMoney,
   notCreatedStatusLabel,
   shopifyFulfillmentStatus,
+  shopifyOrderUrl,
   warehouse,
 } from "../orderFormat";
 
 const FILTER_KEYS = ["marketplace", "date_from", "date_to", "search"];
 const PAGE_SIZE_OPTIONS = [20, 50];
-const NOT_CREATED_TAB = "no-creados";
+const NOT_CREATED_TAB = "not-created";
 
 const secondaryText = { display: "block", color: "text.secondary", fontSize: 12 };
 
@@ -29,9 +30,7 @@ const orderColumns = [
     header: "Pedido",
     cell: ({ row: { original: o } }) => (
       <>
-        <Typography variant="body2" fontWeight={600} component="span">
-          {o.shopify_order_name}
-        </Typography>
+        <ShopifyOrderLink order={o} />
         {o.marketplace_order_numbers.length > 0 && (
           <Typography component="span" sx={secondaryText}>
             {o.marketplace_order_numbers.join(", ")}
@@ -125,6 +124,35 @@ const notCreatedColumns = [
   { accessorKey: "total", header: "Total", meta: { align: "right" }, cell: ({ getValue }) => formatMoney(getValue()) },
 ];
 
+// Abre el pedido en el admin de Shopify; sin `VITE_SHOPIFY_ADMIN_URL`,
+// solo el número. No despliega la fila (stopPropagation).
+function ShopifyOrderLink({ order }) {
+  const url = shopifyOrderUrl(order.shopify_order_id);
+  if (!url) {
+    return (
+      <Typography variant="body2" fontWeight={600} component="span">
+        {order.shopify_order_name}
+      </Typography>
+    );
+  }
+  return (
+    <Link
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      variant="body2"
+      fontWeight={600}
+      underline="hover"
+      title="Abrir en Shopify"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {order.shopify_order_name}
+    </Link>
+  );
+}
+
+const renderExpanded = (order) => <OrderExpandedDetail order={order} />;
+
 // Lee la consulta de la URL: es la fuente de verdad de filtros, página y
 // pestaña (enlace compartible, atrás/adelante del navegador).
 function readQuery(searchParams) {
@@ -149,7 +177,6 @@ export default function OrdersPage() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selected, setSelected] = useState(null);
 
   const updateQuery = useCallback(
     (changes, { resetPage = true } = {}) => {
@@ -264,7 +291,7 @@ export default function OrdersPage() {
             data={notCreated}
             loading={loading}
             getRowId={(row) => String(row.id)}
-            onRowClick={setSelected}
+            renderExpanded={renderExpanded}
             emptyMessage="No hay pedidos pendientes por crear."
           />
         </>
@@ -274,7 +301,7 @@ export default function OrdersPage() {
           data={orders}
           loading={loading}
           getRowId={(row) => row.shopify_order_id}
-          onRowClick={setSelected}
+          renderExpanded={renderExpanded}
           emptyMessage="No hay pedidos con estos filtros."
           pagination={{
             page,
@@ -286,8 +313,6 @@ export default function OrdersPage() {
           }}
         />
       )}
-
-      <OrderDetailDrawer order={selected} onClose={() => setSelected(null)} />
     </Box>
   );
 }

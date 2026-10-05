@@ -17,7 +17,7 @@ detalle interno (ver `BrandMark`, privado de `Sidebar/`).
 | `Sidebar` | navigation | `src/components/navigation/Sidebar/` | `AppShell` |
 | `Topbar` | navigation | `src/components/navigation/Topbar/` | `AppShell` |
 | `DataTable` | tables | `src/components/tables/DataTable/` | `OrdersPage` |
-| `StatusChip` | data-display | `src/components/data-display/StatusChip/` | `OrdersPage`, `OrderDetailDrawer` |
+| `StatusChip` | data-display | `src/components/data-display/StatusChip/` | `OrdersPage` |
 
 ## `Sidebar`
 
@@ -48,7 +48,7 @@ detalle interno (ver `BrandMark`, privado de `Sidebar/`).
   servidor (`pagination`): muestra la página que entrega el backend. Ver
   [`patterns/DATA_TABLE.md`](../patterns/DATA_TABLE.md).
 - **Props**: `columns` (TanStack Table; `meta.align` alinea la columna),
-  `data`, `emptyMessage`, `loading`, `onRowClick`, `getRowId`, y
+  `data`, `emptyMessage`, `loading`, `renderExpanded`, `getRowId`, y
   `pagination` (`page`, `pageSize`, `count`, `onPageChange`,
   `pageSizeOptions`, `onPageSizeChange`) para el modo servidor.
 - **No usar para**: ordenar o filtrar en el navegador una colección paginada

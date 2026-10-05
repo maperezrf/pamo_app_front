@@ -10,11 +10,11 @@ lee su copia local de Shopify, nunca Shopify en vivo.
 | --- | --- | --- |
 | Página | `src/modules/orders/pages/OrdersPage.jsx` | Estado en la URL, carga, pestañas, columnas y errores. |
 | Filtros | `src/modules/orders/components/OrderFilters.jsx` | Búsqueda (con espera de 400 ms), canal y rango de fechas. |
-| Detalle | `src/modules/orders/components/OrderDetailDrawer.jsx` | Panel lateral con cliente, bodega, ítems y error. |
+| Detalle | `src/modules/orders/components/OrderExpandedDetail.jsx` | Contenido del acordeón: contacto, bodega, error y productos. |
 | Canal | `src/modules/orders/components/MarketplaceLabel.jsx` | Logo + nombre del canal (tabla, detalle y filtro). |
 | Formato | `src/modules/orders/orderFormat.js` | Etiquetas y logos de canal, estados, fechas y dinero. |
 
-Ruta `/pedidos`. Su entrada de menú vive en `backend/accounts/menu_config.py`
+Ruta `/orders` (rutas y valores de la URL en inglés; los textos visibles en español). Su entrada de menú vive en `backend/accounts/menu_config.py`
 con los mismos roles del endpoint (`Admin`, `Operaciones`).
 
 ## Comportamiento
@@ -33,6 +33,16 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
   un aviso de permisos; `404` de página inexistente vuelve a la página 1;
   un fallo de red muestra un aviso de conexión. Una respuesta vieja se
   descarta si los filtros cambiaron antes de que llegara.
+- **Acordeón**: un clic en la fila (o en la flecha) despliega debajo los
+  productos del pedido con el contacto del cliente y la novedad de bodega;
+  en un pedido no creado, también el error.
+- **Enlaces a Shopify** (pestaña nueva): el número de pedido abre
+  `<admin>/orders/<shopify_order_id>`; el SKU de cada producto abre la
+  búsqueda de productos del admin por ese SKU, porque el contrato no trae el
+  id del producto. El SKU de un pedido no creado es del marketplace y no
+  enlaza. `<admin>` es `VITE_SHOPIFY_ADMIN_URL`
+  (`https://admin.shopify.com/store/<tienda>`, no es secreta); sin ella, se
+  muestran los textos sin enlace.
 - `last_synced_at` se muestra como la fecha de la última sincronización
   con Shopify.
 
