@@ -16,7 +16,8 @@ detalle interno (ver `BrandMark`, privado de `Sidebar/`).
 | --- | --- | --- | --- |
 | `Sidebar` | navigation | `src/components/navigation/Sidebar/` | `AppShell` |
 | `Topbar` | navigation | `src/components/navigation/Topbar/` | `AppShell` |
-| `DataTable` | tables | `src/components/tables/DataTable/` | `PrototiposPage` |
+| `DataTable` | tables | `src/components/tables/DataTable/` | `OrdersPage` |
+| `StatusChip` | data-display | `src/components/data-display/StatusChip/` | `OrdersPage`, `OrderDetailDrawer` |
 
 ## `Sidebar`
 
@@ -42,15 +43,29 @@ detalle interno (ver `BrandMark`, privado de `Sidebar/`).
 
 ## `DataTable`
 
-- **Responsabilidad**: tabla genérica con filtro global, orden y paginación,
-  todo en cliente (TanStack Table por debajo, markup de MUI). Ver también
+- **Responsabilidad**: tabla genérica (TanStack Table por debajo, markup
+  de MUI). Modo cliente: filtro global, orden y paginación locales. Modo
+  servidor (`pagination`): muestra la página que entrega el backend. Ver
   [`patterns/DATA_TABLE.md`](../patterns/DATA_TABLE.md).
-- **Props**: `columns` (definición de columnas de TanStack Table), `data`,
-  `emptyMessage` (opcional).
-- **No usar para**: colecciones grandes que necesiten paginación de
-  servidor — ese caso requiere un contrato de API y estado de carga propios.
+- **Props**: `columns` (TanStack Table; `meta.align` alinea la columna),
+  `data`, `emptyMessage`, `loading`, `onRowClick`, `getRowId`, y
+  `pagination` (`page`, `pageSize`, `count`, `onPageChange`,
+  `pageSizeOptions`, `onPageSizeChange`) para el modo servidor.
+- **No usar para**: ordenar o filtrar en el navegador una colección paginada
+  por el backend; en modo servidor esos filtros van en la consulta.
 - **Dependencias**: `@tanstack/react-table`; MUI `Table`, `TableSortLabel`,
   `TextField`, `Paper`.
+
+## `StatusChip`
+
+- **Responsabilidad**: etiqueta corta de estado con un tono del tema
+  (`success`, `error`, `neutral`).
+- **Props**: `label`, `tone` (por defecto `neutral`), `title` (opcional,
+  texto al pasar el mouse).
+- **No usar para**: acciones o filtros clicables; para eso usar `Chip` o
+  `Button` de MUI. Un tono nuevo se agrega solo si la paleta ya tiene el
+  color.
+- **Dependencias**: MUI `Chip`.
 
 ## Mantenimiento
 

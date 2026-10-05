@@ -43,7 +43,7 @@ simplemente hereda el color del padre). Pasar `color="text.secondary"` o
 `color="error.main"` a `Typography` no falla nada, pero tampoco pinta nada.
 Correcto: `color="textSecondary"`, `color="error"`. Esto pasó en la
 migración inicial de `LoginPage`/`UnauthorizedPage`/`HomePage`/
-`PrototiposPage`/`Topbar`/`DataTable` y se detectó recién al verificar
+`Topbar`/`DataTable` y se detectó recién al verificar
 visualmente el estado de error (texto invisible en vez de rojo) — motivo de
 más para no saltarse la verificación visual real de un cambio de UI.
 
@@ -71,9 +71,8 @@ manual que tenía la versión en CSS plano). Al colapsar en escritorio, los
 comportamiento original.
 
 Migradas también: `DataTable` (markup MUI —`Table`, `TableSortLabel`,
-`TextField`, `Paper`— sobre la misma lógica de TanStack Table), `HomePage`,
-`PrototiposPage` (incluye las celdas de estado/merge de la tabla, migradas a
-`Chip`) y el estado de carga de `App.jsx`.
+`TextField`, `Paper`— sobre la misma lógica de TanStack Table), `HomePage`
+y el estado de carga de `App.jsx`.
 
 **Migración completa**: todo el árbol de componentes usa MUI. `index.css`
 quedó reducido a lo mínimo indispensable — `--ink`, `--ground` y

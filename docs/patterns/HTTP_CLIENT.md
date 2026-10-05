@@ -8,7 +8,9 @@ token CSRF antes de solicitudes que no son `GET`.
 
 No crear otra instancia de Axios ni llamar `fetch` directamente para un
 endpoint del backend. Añadir una función delgada a `api` que devuelva el
-formato común `{ ok, status, data }`.
+formato común `{ ok, status, data }`. `request(path, { method, body,
+params })`: `params` es la query string (Axios omite los `undefined`, pero
+envía los strings vacíos, así que la pantalla no debe pasar filtros vacíos).
 
 El wrapper transforma respuestas HTTP rechazadas en `ok: false`; errores sin
 respuesta HTTP se propagan para que la pantalla pueda tratarlos como fallo de

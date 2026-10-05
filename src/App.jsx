@@ -6,7 +6,7 @@ import AppShell from "./app/layouts/AppShell";
 import LoginPage from "./modules/access/pages/LoginPage";
 import UnauthorizedPage from "./modules/access/pages/UnauthorizedPage";
 import HomePage from "./modules/home/pages/HomePage";
-import PrototiposPage from "./modules/home/pages/PrototiposPage";
+import OrdersPage from "./modules/orders/pages/OrdersPage";
 
 // authed: null = verificando sesión, false = sin sesión, true = con sesión
 export default function App() {
@@ -85,7 +85,7 @@ export default function App() {
         }
       >
         <Route path="/" element={<HomePage user={user} />} />
-        <Route path="/prototipos" element={<PrototiposPage />} />
+        <Route path="/pedidos" element={<OrdersPage />} />
       </Route>
     </Routes>
   );

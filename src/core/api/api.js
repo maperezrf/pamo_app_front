@@ -1,8 +1,8 @@
 import httpClient from "./httpClient";
 
-async function request(path, { method = "GET", body } = {}) {
+async function request(path, { method = "GET", body, params } = {}) {
   try {
-    const response = await httpClient.request({ url: path, method, data: body });
+    const response = await httpClient.request({ url: path, method, data: body, params });
     return { ok: true, status: response.status, data: response.data ?? null };
   } catch (error) {
     if (error.response) {
@@ -20,5 +20,5 @@ export const api = {
   logout: () => request("/api/auth/logout/", { method: "POST" }),
   menu: () => request("/api/auth/menu/"),
   pingAdmin: () => request("/api/auth/ping-admin/"),
-  listarPrototipos: () => request("/api/tracking/prototipos/admin/"),
+  listOrders: (params) => request("/api/orders/", { params }),
 };

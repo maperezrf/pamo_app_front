@@ -1,0 +1,56 @@
+# Área: pedidos
+
+Pantalla de consulta de pedidos sobre `GET /api/orders/` (contrato en
+`backend/docs/contracts/API.md`, `OrderListAPI`). Solo lectura: el backend
+lee su copia local de Shopify, nunca Shopify en vivo.
+
+## Ubicación
+
+| Pieza | Archivo | Responsabilidad |
+| --- | --- | --- |
+| Página | `src/modules/orders/pages/OrdersPage.jsx` | Estado en la URL, carga, pestañas, columnas y errores. |
+| Filtros | `src/modules/orders/components/OrderFilters.jsx` | Búsqueda (con espera de 400 ms), canal y rango de fechas. |
+| Detalle | `src/modules/orders/components/OrderDetailDrawer.jsx` | Panel lateral con cliente, bodega, ítems y error. |
+| Canal | `src/modules/orders/components/MarketplaceLabel.jsx` | Logo + nombre del canal (tabla, detalle y filtro). |
+| Formato | `src/modules/orders/orderFormat.js` | Etiquetas y logos de canal, estados, fechas y dinero. |
+
+Ruta `/pedidos`. Su entrada de menú vive en `backend/accounts/menu_config.py`
+con los mismos roles del endpoint (`Admin`, `Operaciones`).
+
+## Comportamiento
+
+- **La URL es la fuente de verdad** de `marketplace`, `date_from`,
+  `date_to`, `search`, `page`, `page_size` y `tab`. Cambiar un filtro vuelve
+  a la página 1. Los valores vacíos no se envían: el backend rechaza
+  `marketplace=""` con `400`.
+- **Pestaña "En Shopify"**: `orders`, paginado en servidor con `DataTable`
+  en modo servidor (20 o 50 por página; el backend permite hasta 50).
+- **Pestaña "No creados"**: `orders_not_created`. Llega completa en cada
+  respuesta (hasta 200), por eso usa `DataTable` en modo cliente. Si
+  `orders_not_created_count` supera lo recibido, se avisa que se muestran
+  solo los más recientes.
+- **Errores**: `400` muestra el mensaje de validación del backend; `403`,
+  un aviso de permisos; `404` de página inexistente vuelve a la página 1;
+  un fallo de red muestra un aviso de conexión. Una respuesta vieja se
+  descarta si los filtros cambiaron antes de que llegara.
+- `last_synced_at` se muestra como la fecha de la última sincronización
+  con Shopify.
+
+## Etiquetas
+
+`orderFormat.js` traduce los valores del contrato: canales (`Marketplace`
+del backend más `shopify`), `financial_status` y `fulfillment_status` de
+Shopify, la bodega (`fulfillment.status`: `asignada`, `novedad`,
+`resuelta_manual`, vacío = sin evaluar) y el `status` de los no creados. Un
+valor desconocido se muestra tal cual. Si el backend agrega un canal o un
+estado, se agrega acá.
+
+Logos de canal: íconos oficiales de cada sitio en
+`src/assets/marketplaces/<valor>.png` (el valor del contrato: `falabella`,
+`mercadolibre`, `madecentro`, `sodimac`, `shopify`). Sodimac usa el ícono
+de Homecenter, la marca con la que opera en Colombia. Se empaquetan con la
+app (no se cargan de sitios externos). Un canal nuevo agrega su PNG ahí y
+su entrada en `MARKETPLACE_LOGOS`; sin logo, se muestra solo el nombre.
+
+Fechas en hora de Colombia; importes con `Intl.NumberFormat` `es-CO` en la
+moneda del pedido (`COP` cuando no viene).

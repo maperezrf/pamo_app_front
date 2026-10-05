@@ -14,8 +14,13 @@ src/
 │   └── api/               Cliente HTTP único y wrapper de endpoints.
 ├── modules/
 │   ├── access/            Pantallas de login y no autorizado.
-│   └── home/               Pantalla principal y prototipos.
+│   ├── home/               Pantalla principal.
+│   └── orders/             Listado y detalle de pedidos.
+│       ├── pages/
+│       ├── components/     Componentes propios del área.
+│       └── orderFormat.js  Etiquetas y formato del área.
 ├── components/
+│   ├── data-display/       StatusChip.
 │   ├── navigation/         Sidebar, Topbar.
 │   └── tables/              DataTable.
 ├── theme/                   Paleta, tipografía, forma y sombras (MUI).
@@ -35,6 +40,10 @@ src/
 - `src/modules/<área>/pages/`: pantallas agrupadas por área funcional.
   Página nueva → primero decidir a qué área pertenece (`access`, `home`, o
   una nueva) antes de agregarla como archivo suelto.
+- `src/modules/<área>/components/`: componentes que solo usa esa área (ej.
+  filtros o detalle de pedidos). Si otra área los necesita, se mueven a
+  `src/components/` y se registran en el catálogo. Etiquetas y formato del
+  área viven en un archivo plano del área (ej. `orders/orderFormat.js`).
 - `src/components/<categoría>/`: componentes de interfaz reutilizables,
   centralizados y clasificados por función (`navigation`, `tables`, y las
   que se agreguen: `forms`, `filters`, `cards`, `charts`, `modals`,
