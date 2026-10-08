@@ -43,6 +43,21 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
   enlaza. `<admin>` es `VITE_SHOPIFY_ADMIN_URL`
   (`https://admin.shopify.com/store/<tienda>`, no es secreta); sin ella, se
   muestran los textos sin enlace.
+- **Despacho a bodega** (`dispatch` del contrato): en el acordeón de un
+  pedido de Shopify se muestra la bodega que despacha, el estado del
+  despacho (con su motivo en `note`), la guía y cada aviso por canal
+  (API de Envía, correo, WhatsApp) con su estado, destinatario o error.
+  Pedidos sin despacho (`dispatch: null`) no muestran el bloque. Etiquetas
+  en `orderFormat.js` (`dispatchStatus`, `notificationStatus`,
+  `notificationChannelLabel`).
+- **Columna "Aviso"**: estado del despacho (`dispatchStatus`), con la
+  bodega y los canales avisados en el `title`.
+- **Botones del despacho** (`components/DispatchActions.jsx`, en el
+  acordeón de pedidos de Shopify): "Traer guía" (Mercado Libre, Falabella),
+  "Generar guía" (tienda web: diálogo que cotiza, muestra opciones con
+  precio y genera la elegida; deshabilitado si ya tiene guía generada) y
+  "Notificar a proveedor". Piden confirmación, muestran el `detail` del
+  backend si falla y recargan el listado al terminar.
 - `last_synced_at` se muestra como la fecha de la última sincronización
   con Shopify.
 

@@ -1,7 +1,10 @@
 # Área: acceso
 
 La pantalla `src/modules/access/pages/LoginPage.jsx` presenta el inicio de
-sesión con Google.
+sesión con Google y `UnauthorizedPage.jsx` el rechazo; las dos usan
+`AuthLayout` (`src/app/layouts/AuthLayout/`). La ilustración de la derecha
+(`AuthHero`) está hecha con el tema y los logos de canales mientras no haya
+una imagen corporativa; al tenerla, se reemplaza solo `AuthHero`.
 Recibe callbacks de `App.jsx`: una respuesta autorizada entrega el usuario;
 un rechazo `403` dirige a la pantalla de no autorizado; otros fallos muestran
 un mensaje que permite reintentar.

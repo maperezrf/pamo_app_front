@@ -9,10 +9,12 @@ import OrderExpandedDetail from "../components/OrderExpandedDetail";
 import MarketplaceLabel from "../components/MarketplaceLabel";
 import {
   customerName,
+  dispatchStatus,
   financialStatus,
   formatDateTime,
   formatMoney,
   notCreatedStatusLabel,
+  notificationChannelLabel,
   shopifyFulfillmentStatus,
   shopifyOrderUrl,
   warehouse,
@@ -76,6 +78,21 @@ const orderColumns = [
     cell: ({ row }) => {
       const bodega = warehouse(row.original.fulfillment);
       return bodega ? <StatusChip label={bodega.label} tone={bodega.tone} title={bodega.detail} /> : "—";
+    },
+  },
+  {
+    id: "dispatch",
+    header: "Aviso",
+    cell: ({ row }) => {
+      // ¿Se le avisó a la bodega? (`dispatch` del contrato).
+      const dispatch = row.original.dispatch;
+      if (!dispatch) return "—";
+      const status = dispatchStatus(dispatch.status);
+      const sent = dispatch.notifications.filter((n) => n.status === "enviado").map((n) => notificationChannelLabel(n.channel));
+      const title = [dispatch.location_name, sent.length ? `Avisado por: ${sent.join(", ")}` : "", dispatch.note]
+        .filter(Boolean)
+        .join(" · ");
+      return status ? <StatusChip label={status.label} tone={status.tone} title={title} /> : "—";
     },
   },
   {
@@ -151,8 +168,6 @@ function ShopifyOrderLink({ order }) {
   );
 }
 
-const renderExpanded = (order) => <OrderExpandedDetail order={order} />;
-
 // Lee la consulta de la URL: es la fuente de verdad de filtros, página y
 // pestaña (enlace compartible, atrás/adelante del navegador).
 function readQuery(searchParams) {
@@ -177,6 +192,10 @@ export default function OrdersPage() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // Sube tras una acción del despacho para recargar el listado.
+  const [reloadKey, setReloadKey] = useState(0);
+  const reload = useCallback(() => setReloadKey((key) => key + 1), []);
+  const renderExpanded = useCallback((order) => <OrderExpandedDetail order={order} onChanged={reload} />, [reload]);
 
   const updateQuery = useCallback(
     (changes, { resetPage = true } = {}) => {
@@ -234,7 +253,7 @@ export default function OrdersPage() {
     return () => {
       ignore = true;
     };
-  }, [filters, page, pageSize, updateQuery]);
+  }, [filters, page, pageSize, updateQuery, reloadKey]);
 
   const orders = useMemo(() => (result?.orders ?? []).map((o) => ({ ...o, kind: "shopify" })), [result]);
   const notCreated = useMemo(

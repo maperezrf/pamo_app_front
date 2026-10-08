@@ -29,7 +29,7 @@ aplica, se incorpora a la documentación versionada.
 | Inicio y rutas | `src/App.jsx` | Sesión, rutas protegidas y carga de menú. | [`architecture/OVERVIEW.md`](architecture/OVERVIEW.md) |
 | API HTTP | `src/core/api/httpClient.js`, `src/core/api/api.js` | Axios, CSRF y wrapper de endpoints. | [`patterns/HTTP_CLIENT.md`](patterns/HTTP_CLIENT.md) |
 | Acceso | `src/modules/access/pages/LoginPage.jsx` | Inicio de sesión con Google. | [`apps/access.md`](apps/access.md) |
-| Shell compartido | `src/app/layouts/AppShell/`, `src/components/navigation/` | Sidebar, topbar, footer y layout autenticado. | [`architecture/OVERVIEW.md`](architecture/OVERVIEW.md) |
+| Shell compartido | `src/app/layouts/`, `src/components/navigation/` | Layout autenticado (`AppShell`: sidebar, topbar, footer) y de acceso (`AuthLayout`). | [`architecture/OVERVIEW.md`](architecture/OVERVIEW.md) |
 | Pedidos | `src/modules/orders/` | Listado de pedidos con filtros, paginación de servidor y detalle. | [`apps/orders.md`](apps/orders.md) |
 | Tabla compartida | `src/components/tables/DataTable/` | Tabla en modo cliente o con paginación de servidor. | [`patterns/DATA_TABLE.md`](patterns/DATA_TABLE.md) |
 | Chip de estado | `src/components/data-display/StatusChip/` | Etiqueta de estado con tonos del tema. | [`architecture/COMPONENT_REGISTRY.md`](architecture/COMPONENT_REGISTRY.md) |

@@ -18,13 +18,4 @@ body {
 
 #root {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-#root:has(.app-shell) {
-  display: block;
-  padding: 0;
 }

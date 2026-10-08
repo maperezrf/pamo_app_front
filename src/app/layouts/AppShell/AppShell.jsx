@@ -9,10 +9,7 @@ export default function AppShell({ user, menu, onLogout }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    // className="app-shell" alimenta el selector #root:has(.app-shell) en
-    // index.css, que evita que #root centre este layout como si fuera una
-    // pantalla de acceso.
-    <Box className="app-shell" sx={{ display: "flex", minHeight: "100vh", width: "100%" }}>
+    <Box sx={{ display: "flex", minHeight: "100vh", width: "100%" }}>
       <Sidebar
         items={menu}
         mobileOpen={mobileNavOpen}

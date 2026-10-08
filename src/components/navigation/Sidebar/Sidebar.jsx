@@ -10,7 +10,7 @@ import {
   Typography,
   useMediaQuery,
 } from "@mui/material";
-import BrandMark from "./BrandMark";
+import BrandMark from "../../brand/BrandMark";
 
 const COLLAPSED_STORAGE_KEY = "pamo-app-sidebar-collapsed";
 const EXPANDED_WIDTH = 240;

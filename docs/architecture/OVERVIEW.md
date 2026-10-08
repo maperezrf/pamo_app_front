@@ -8,7 +8,7 @@ la sesión y protege las rutas que se renderizan dentro de `AppShell`.
 ```
 src/
 ├── app/
-│   ├── layouts/         Marcos visuales generales (AppShell).
+│   ├── layouts/         Marcos visuales generales (AppShell, AuthLayout).
 │   └── providers/        Providers globales (AppThemeProvider).
 ├── core/
 │   └── api/               Cliente HTTP único y wrapper de endpoints.
@@ -20,6 +20,7 @@ src/
 │       ├── components/     Componentes propios del área.
 │       └── orderFormat.js  Etiquetas y formato del área.
 ├── components/
+│   ├── brand/              BrandMark.
 │   ├── data-display/       StatusChip.
 │   ├── navigation/         Sidebar, Topbar.
 │   └── tables/              DataTable.
@@ -27,8 +28,11 @@ src/
 └── assets/
 ```
 
-- `src/app/layouts/`: layouts generales de la aplicación (hoy solo
-  `AppShell`). No debe contener reglas de negocio.
+- `src/app/layouts/`: layouts generales de la aplicación. `AppShell` es el
+  marco autenticado; `AuthLayout`, el de las pantallas sin sesión (login y
+  no autorizado): pantalla dividida en dos mitades en escritorio (contenido
+  a la izquierda, ilustración `AuthHero` a la derecha) y solo el contenido
+  en móvil. No deben contener reglas de negocio.
 - `src/app/providers/`: providers globales de React (hoy solo
   `AppThemeProvider`, ver [`patterns/THEME.md`](../patterns/THEME.md)). No
   crear un provider para estado que solo usa un componente.
@@ -50,7 +54,7 @@ src/
   `feedback`, `data-display`), nunca por la pantalla que los usa primero.
   Un componente reutilizable vive en su propia carpeta con `index.js` como
   punto de exportación pública; un archivo interno usado por un solo
-  componente (ej. `BrandMark` dentro de `Sidebar/`) se anida ahí y no se
+  componente (ej. `AuthHero` dentro de `AuthLayout/`) se anida ahí y no se
   importa desde fuera de esa carpeta. Antes de crear un componente nuevo,
   revisar [`COMPONENT_REGISTRY.md`](COMPONENT_REGISTRY.md) para reutilizar
   o ampliar uno existente en vez de duplicarlo; registrar ahí todo

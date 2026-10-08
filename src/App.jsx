@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
-import { Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { api } from "./core/api/api";
 import AppShell from "./app/layouts/AppShell";
 import LoginPage from "./modules/access/pages/LoginPage";
@@ -45,9 +45,11 @@ export default function App() {
 
   if (authed === null) {
     return (
-      <Typography color="textSecondary" fontSize={14}>
-        Cargando…
-      </Typography>
+      <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Typography color="textSecondary" fontSize={14}>
+          Cargando…
+        </Typography>
+      </Box>
     );
   }
 

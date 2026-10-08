@@ -8,7 +8,7 @@ nombre.
 
 Un componente usado solo por otro componente (no importado desde ningún otro
 lugar) no se registra acá — vive dentro de la carpeta de su consumidor como
-detalle interno (ver `BrandMark`, privado de `Sidebar/`).
+detalle interno (ver `AuthHero`, privado de `AuthLayout/`).
 
 ## Índice
 
@@ -17,6 +17,7 @@ detalle interno (ver `BrandMark`, privado de `Sidebar/`).
 | `Sidebar` | navigation | `src/components/navigation/Sidebar/` | `AppShell` |
 | `Topbar` | navigation | `src/components/navigation/Topbar/` | `AppShell` |
 | `DataTable` | tables | `src/components/tables/DataTable/` | `OrdersPage` |
+| `BrandMark` | brand | `src/components/brand/BrandMark/` | `Sidebar`, `AuthLayout` |
 | `StatusChip` | data-display | `src/components/data-display/StatusChip/` | `OrdersPage` |
 
 ## `Sidebar`
@@ -55,6 +56,14 @@ detalle interno (ver `BrandMark`, privado de `Sidebar/`).
   por el backend; en modo servidor esos filtros van en la consulta.
 - **Dependencias**: `@tanstack/react-table`; MUI `Table`, `TableSortLabel`,
   `TextField`, `Paper`.
+
+## `BrandMark`
+
+- **Responsabilidad**: marca de Pamo (la "P" sobre el color primario)
+  mientras no exista un logo oficial. Cuando llegue el logo, se reemplaza
+  acá y lo toman todos sus consumidores.
+- **Props**: `size` (px, por defecto 28).
+- **Dependencias**: MUI `Box`.
 
 ## `StatusChip`
 

@@ -70,6 +70,32 @@ function statusFrom(map, value) {
   return { label, tone };
 }
 
+// Despacho a bodega (`dispatch` del contrato, `orders.Dispatch` en backend):
+// estado → [etiqueta, tono de StatusChip].
+const DISPATCH_STATUS = {
+  esperando_guia: ["Esperando guía", "neutral"],
+  listo: ["Listo para avisar", "neutral"],
+  notificado: ["Bodega avisada", "success"],
+  error: ["Error al avisar", "error"],
+  manual: ["Gestión manual", "error"],
+  cancelado: ["Cancelado", "neutral"],
+};
+
+const NOTIFICATION_CHANNEL = { api: "Envía (API)", email: "Correo", whatsapp: "WhatsApp" };
+
+const NOTIFICATION_STATUS = {
+  pendiente: ["Pendiente", "neutral"],
+  procesando: ["Procesando", "neutral"],
+  enviado: ["Enviado", "success"],
+  error: ["Error", "error"],
+};
+
+export const dispatchStatus = (value) => statusFrom(DISPATCH_STATUS, value);
+
+export const notificationStatus = (value) => statusFrom(NOTIFICATION_STATUS, value);
+
+export const notificationChannelLabel = (value) => NOTIFICATION_CHANNEL[value] ?? value;
+
 // Bodega de despacho (`fulfillment` del contrato) → texto y tono.
 export function warehouse(fulfillment) {
   const { status, location_name: name, note } = fulfillment ?? {};

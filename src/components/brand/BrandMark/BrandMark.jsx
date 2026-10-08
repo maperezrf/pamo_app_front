@@ -1,21 +1,24 @@
 import { Box } from "@mui/material";
 
-export default function BrandMark() {
+// Marca de Pamo mientras no exista un logo oficial: la "P" sobre el color
+// primario. `size` en px; la letra escala con el cuadro.
+export default function BrandMark({ size = 28 }) {
   return (
     <Box
       aria-hidden="true"
       sx={{
-        width: 28,
-        height: 28,
+        width: size,
+        height: size,
         flexShrink: 0,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: 1,
+        borderRadius: size >= 40 ? 1.5 : 1,
         bgcolor: "primary.main",
         color: "primary.contrastText",
-        fontSize: 14,
+        fontSize: Math.round(size / 2),
         fontWeight: 700,
+        lineHeight: 1,
       }}
     >
       P

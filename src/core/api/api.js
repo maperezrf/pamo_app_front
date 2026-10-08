@@ -21,4 +21,13 @@ export const api = {
   menu: () => request("/api/auth/menu/"),
   pingAdmin: () => request("/api/auth/ping-admin/"),
   listOrders: (params) => request("/api/orders/", { params }),
+  // Despacho de UN pedido (botones del panel). Responden {dispatch} o {detail}.
+  notifyDispatch: (shopifyOrderId) =>
+    request(`/api/orders/${shopifyOrderId}/dispatch/notify/`, { method: "POST" }),
+  fetchDispatchLabel: (shopifyOrderId) =>
+    request(`/api/orders/${shopifyOrderId}/dispatch/label/fetch/`, { method: "POST" }),
+  quoteDispatchLabel: (shopifyOrderId) =>
+    request(`/api/orders/${shopifyOrderId}/dispatch/label/quote/`, { method: "POST" }),
+  generateDispatchLabel: (shopifyOrderId, { carrier, service }) =>
+    request(`/api/orders/${shopifyOrderId}/dispatch/label/`, { method: "POST", body: { carrier, service } }),
 };

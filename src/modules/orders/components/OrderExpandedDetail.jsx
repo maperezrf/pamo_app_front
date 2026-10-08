@@ -1,14 +1,19 @@
 import { Alert, Box, Link, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
+import StatusChip from "../../../components/data-display/StatusChip";
+import DispatchActions from "./DispatchActions";
 import {
+  dispatchStatus,
   formatDateTime,
   formatMoney,
+  notificationChannelLabel,
+  notificationStatus,
   shopifyProductSearchUrl,
   warehouse,
 } from "../orderFormat";
 
 // Contenido desplegado de una fila de pedidos (acordeón de DataTable).
 // `order.kind`: "shopify" (orders) o "not_created" (orders_not_created).
-export default function OrderExpandedDetail({ order }) {
+export default function OrderExpandedDetail({ order, onChanged }) {
   const isShopify = order.kind === "shopify";
   const customer = order.customer ?? {};
   const bodega = warehouse(order.fulfillment);
@@ -33,6 +38,19 @@ export default function OrderExpandedDetail({ order }) {
         {!isShopify && order.shipment_id && <Info label="Envío" value={order.shipment_id} />}
         {!isShopify && <Info label="Última actualización" value={formatDateTime(order.updated_at)} />}
       </Box>
+
+      {isShopify && (
+        <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1, bgcolor: "background.paper", p: 1.5 }}>
+          {order.dispatch ? (
+            <DispatchSummary dispatch={order.dispatch} />
+          ) : (
+            <Typography variant="body2" color="textSecondary">
+              Sin despacho todavía: "Notificar a proveedor" asigna la bodega y avisa.
+            </Typography>
+          )}
+          <DispatchActions order={order} onChanged={onChanged} />
+        </Box>
+      )}
 
       <Table size="small" sx={{ bgcolor: "background.paper", border: 1, borderColor: "divider" }}>
         <TableHead>
@@ -94,6 +112,58 @@ function ProductName({ item, linkToShopify }) {
         </Typography>
       )}
     </>
+  );
+}
+
+// Despacho a la bodega: a quién le toca, en qué va y cómo se le avisó.
+function DispatchSummary({ dispatch }) {
+  const status = dispatchStatus(dispatch.status);
+  return (
+    <Box>
+      <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
+        <Typography variant="body2" fontWeight={600}>
+          Despacho{dispatch.location_name ? `: ${dispatch.location_name}` : ""}
+        </Typography>
+        {status && <StatusChip {...status} />}
+        {dispatch.tracking_number && (
+          <Typography variant="body2" color="textSecondary">
+            Guía {dispatch.tracking_number}
+            {dispatch.label_source === "envia" && ` · generada en Envía (${dispatch.label_carrier} ${dispatch.label_service})`}
+            {dispatch.label_source === "canal" && " · del canal"}
+          </Typography>
+        )}
+      </Box>
+      {dispatch.note && (
+        <Typography variant="body2" color="textSecondary" sx={{ mt: 0.75 }}>
+          {dispatch.note}
+        </Typography>
+      )}
+      {dispatch.notifications.length > 0 && (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, mt: 1 }}>
+          {dispatch.notifications.map((notification) => {
+            const sent = notificationStatus(notification.status);
+            return (
+              <Box key={notification.channel} sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
+                <Typography variant="body2" sx={{ minWidth: 96 }}>
+                  {notificationChannelLabel(notification.channel)}
+                </Typography>
+                {sent && <StatusChip {...sent} title={notification.error || undefined} />}
+                <Typography variant="caption" color="textSecondary" sx={{ wordBreak: "break-word" }}>
+                  {notification.error ||
+                    [
+                      notification.recipient,
+                      notification.channel === "api" && notification.external_id ? `orden Envía ${notification.external_id}` : "",
+                      formatDateTime(notification.sent_at),
+                    ]
+                      .filter((v) => v && v !== "—")
+                      .join(" · ")}
+                </Typography>
+              </Box>
+            );
+          })}
+        </Box>
+      )}
+    </Box>
   );
 }
 

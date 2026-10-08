@@ -79,7 +79,7 @@ quedó reducido a lo mínimo indispensable — `--ink`, `--ground` y
 `font-family` como *fallback* antes de que `CssBaseline` inyecte sus
 estilos (evita un parpadeo sin estilos entre el HTML inicial y la
 hidratación de React; los mismos valores viven en `src/theme/palette.js`,
-así que si cambia la paleta hay que actualizar los dos lugares), más el
-mecanismo `#root`/`#root:has(.app-shell)` que evita centrar el shell
-autenticado como si fuera una pantalla de acceso. Ningún componente de React
+así que si cambia la paleta hay que actualizar los dos lugares) y
+`#root { min-height: 100vh }`. Cada pantalla define su propio marco
+(`AppShell` o `AuthLayout`); `#root` ya no centra nada. Ningún componente de React
 depende ya de una clase CSS propia del proyecto.
