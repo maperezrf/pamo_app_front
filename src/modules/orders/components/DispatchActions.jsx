@@ -30,6 +30,8 @@ export default function DispatchActions({ order, onChanged }) {
   const [quoteOpen, setQuoteOpen] = useState(false);
   const dispatch = order.dispatch;
   const labelGenerated = dispatch?.label_source === "envia";
+  // La bodega genera la guía de los pedidos sin guía del canal (parámetro de la bodega).
+  const warehouseLabel = Boolean(dispatch?.location_creates_own_label);
 
   const run = async (key, call, success) => {
     setBusy(key);
@@ -76,8 +78,14 @@ export default function DispatchActions({ order, onChanged }) {
           <Button
             size="small"
             variant="outlined"
-            disabled={!!busy || labelGenerated}
-            title={labelGenerated ? "Ya tiene una guía generada" : undefined}
+            disabled={!!busy || labelGenerated || warehouseLabel}
+            title={
+              warehouseLabel
+                ? `${dispatch.location_name} crea su propia guía`
+                : labelGenerated
+                  ? "Ya tiene una guía generada"
+                  : undefined
+            }
             onClick={() => setQuoteOpen(true)}
           >
             Generar guía

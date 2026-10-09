@@ -55,7 +55,8 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
 - **Botones del despacho** (`components/DispatchActions.jsx`, en el
   acordeón de pedidos de Shopify): "Traer guía" (Mercado Libre, Falabella),
   "Generar guía" (tienda web: diálogo que cotiza, muestra opciones con
-  precio y genera la elegida; deshabilitado si ya tiene guía generada) y
+  precio y genera la elegida; deshabilitado si ya tiene guía generada o si
+  la bodega crea su propia guía, `location_creates_own_label`) y
   "Notificar a proveedor". Piden confirmación, muestran el `detail` del
   backend si falla y recargan el listado al terminar.
 - `last_synced_at` se muestra como la fecha de la última sincronización
