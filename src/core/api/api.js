@@ -33,6 +33,15 @@ export const api = {
   // Botón "Generar guía (RPA)" de Sodimac. Responde {channel_label} o {detail}.
   requestChannelLabel: (shopifyOrderId) =>
     request(`/api/orders/${shopifyOrderId}/channel-label/request/`, { method: "POST" }),
+  // Botón "Cargar guía" de Sodimac: rótulo y relación (PDF) y número opcional
+  // (si falta, el backend lo lee del rótulo). Responde {channel_label} o {detail}.
+  uploadChannelLabel: (shopifyOrderId, { label, relation, trackingNumber }) => {
+    const form = new FormData();
+    form.append("label", label);
+    form.append("relation", relation);
+    if (trackingNumber) form.append("tracking_number", trackingNumber);
+    return request(`/api/orders/${shopifyOrderId}/channel-label/upload/`, { method: "POST", body: form });
+  },
   // PDF de la guía que generó un tercero (RPA de Sodimac): kind "rotulo" | "relacion".
   downloadChannelLabel: (shopifyOrderId, kind) =>
     downloadFile(`/api/orders/${shopifyOrderId}/channel-label/${kind}/`),

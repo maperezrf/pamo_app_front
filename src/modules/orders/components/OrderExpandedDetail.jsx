@@ -1,5 +1,21 @@
 import { useState } from "react";
-import { Alert, Box, Button, Link, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Link,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { api } from "../../../core/api/api";
 import StatusChip from "../../../components/data-display/StatusChip";
 import DispatchActions from "./DispatchActions";
@@ -179,6 +195,7 @@ function ChannelLabel({ order, onChanged }) {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [uploadOpen, setUploadOpen] = useState(false);
   const channel = order.channel_label;
   const status = channelLabelStatus(channel.status);
   const received = channel.status === "recibida";
@@ -257,7 +274,21 @@ function ChannelLabel({ order, onChanged }) {
             {busy === "request" ? "Pidiendo…" : "Generar guía (RPA)"}
           </Button>
         )}
+        <Button size="small" variant="text" disabled={!!busy} onClick={() => setUploadOpen(true)}>
+          {received ? "Reemplazar guía" : "Cargar guía"}
+        </Button>
       </Box>
+      {uploadOpen && (
+        <UploadLabelDialog
+          order={order}
+          onClose={() => setUploadOpen(false)}
+          onUploaded={() => {
+            setUploadOpen(false);
+            setNotice("Guía cargada.");
+            onChanged?.();
+          }}
+        />
+      )}
       {notice && (
         <Alert severity="success" sx={{ mt: 1 }} onClose={() => setNotice("")}>
           {notice}
@@ -268,6 +299,75 @@ function ChannelLabel({ order, onChanged }) {
           {error}
         </Alert>
       )}
+    </Box>
+  );
+}
+
+// Carga manual de la guía (rótulo + relación) cuando el RPA no puede: p. ej.
+// la guía ya estaba generada en el portal. El número es opcional: si falta,
+// el backend lo lee del rótulo.
+function UploadLabelDialog({ order, onClose, onUploaded }) {
+  const [label, setLabel] = useState(null);
+  const [relation, setRelation] = useState(null);
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      const { ok, data } = await api.uploadChannelLabel(order.shopify_order_id, {
+        label,
+        relation,
+        trackingNumber: trackingNumber.trim(),
+      });
+      if (ok) onUploaded();
+      else setError(data?.detail || "No se pudo cargar la guía.");
+    } catch {
+      setError("No se pudo conectar con el servidor.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onClose={saving ? undefined : onClose} fullWidth maxWidth="xs" onClick={(e) => e.stopPropagation()}>
+      <DialogTitle>Cargar guía · pedido {order.shopify_order_name}</DialogTitle>
+      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "8px !important" }}>
+        <FileField label="Rótulo (PDF)" file={label} onChange={setLabel} />
+        <FileField label="Relación (PDF)" file={relation} onChange={setRelation} />
+        <TextField
+          size="small"
+          label="Número de guía (opcional)"
+          helperText="Si lo dejas vacío, se lee del rótulo."
+          value={trackingNumber}
+          onChange={(e) => setTrackingNumber(e.target.value)}
+        />
+        {error && <Alert severity="error">{error}</Alert>}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={saving}>
+          Cancelar
+        </Button>
+        <Button variant="contained" onClick={submit} disabled={saving || !label || !relation}>
+          {saving ? "Cargando…" : "Cargar"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+function FileField({ label, file, onChange }) {
+  return (
+    <Box>
+      <Typography variant="caption" color="textSecondary" component="div">
+        {label}
+      </Typography>
+      <Button size="small" variant="outlined" component="label">
+        {file ? file.name : "Elegir archivo"}
+        <input hidden type="file" accept="application/pdf" onChange={(e) => onChange(e.target.files?.[0] ?? null)} />
+      </Button>
     </Box>
   );
 }
