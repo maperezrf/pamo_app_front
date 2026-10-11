@@ -16,10 +16,12 @@ import {
 import { api } from "../../../core/api/api";
 import { formatMoney } from "../orderFormat";
 
-// Canales que traen su propia guía: el botón la trae, no la genera.
+// Canales que traen su propia guía: el botón la trae, no la genera. (La de
+// Sodimac la genera el RPA y el aviso la toma sola: no lleva botón.)
 const CHANNEL_LABELS = ["mercadolibre", "falabella"];
-// La tienda web (y Addi, cotizaciones) no trae guía: se genera en Envía.
-const GENERATED_LABELS = ["shopify"];
+// Sin guía del canal: se genera en Envía. Tienda web (y Addi, cotizaciones)
+// y Madecentro.
+const GENERATED_LABELS = ["shopify", "madecentro"];
 
 // Botones del despacho de un pedido de Shopify: traer o generar la guía y
 // avisar a la bodega. Acciones manuales para probar el flujo de forma
@@ -30,8 +32,8 @@ export default function DispatchActions({ order, onChanged }) {
   const [quoteOpen, setQuoteOpen] = useState(false);
   const dispatch = order.dispatch;
   const labelGenerated = dispatch?.label_source === "envia";
-  // La bodega genera la guía de los pedidos sin guía del canal (parámetro de la bodega).
-  const warehouseLabel = Boolean(dispatch?.location_creates_own_label);
+  // La bodega genera la guía de los pedidos de la tienda web (parámetro de la bodega).
+  const warehouseLabel = order.marketplace === "shopify" && Boolean(dispatch?.location_creates_own_label);
 
   const run = async (key, call, success) => {
     setBusy(key);

@@ -54,10 +54,11 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
   bodega y los canales avisados en el `title`.
 - **Botones del despacho** (`components/DispatchActions.jsx`, en el
   acordeón de pedidos de Shopify): "Traer guía" (Mercado Libre, Falabella),
-  "Generar guía" (tienda web: diálogo que cotiza, muestra opciones con
-  precio y genera la elegida; deshabilitado si ya tiene guía generada o si
-  la bodega crea su propia guía, `location_creates_own_label`) y
-  "Notificar a proveedor". Piden confirmación, muestran el `detail` del
+  "Generar guía" (tienda web y Madecentro: diálogo que cotiza, muestra
+  opciones con precio y genera la elegida; deshabilitado si ya tiene guía
+  generada o, solo en la tienda web, si la bodega crea su propia guía,
+  `location_creates_own_label`) y "Notificar a proveedor". Sodimac no lleva
+  botón de guía: la genera el RPA y el aviso la toma sola. Piden confirmación, muestran el `detail` del
   backend si falla y recargan el listado al terminar.
 - `last_synced_at` se muestra como la fecha de la última sincronización
   con Shopify.
