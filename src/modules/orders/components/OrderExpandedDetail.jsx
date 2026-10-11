@@ -42,7 +42,7 @@ export default function OrderExpandedDetail({ order, onChanged }) {
         {!isShopify && <Info label="Última actualización" value={formatDateTime(order.updated_at)} />}
       </Box>
 
-      {isShopify && order.channel_label && <ChannelLabel order={order} />}
+      {isShopify && order.channel_label && <ChannelLabel order={order} onChanged={onChanged} />}
 
       {isShopify && (
         <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1, bgcolor: "background.paper", p: 1.5 }}>
@@ -172,14 +172,39 @@ function DispatchSummary({ dispatch }) {
   );
 }
 
-// Guía que generó un tercero (hoy el RPA de Sodimac): estado, número y
-// descarga del rótulo y la relación (`channel_label` del contrato).
-function ChannelLabel({ order }) {
+// Guía que generó un tercero (hoy el RPA de Sodimac): estado, número,
+// botón para pedirla al RPA y descarga del rótulo y la relación
+// (`channel_label` del contrato).
+function ChannelLabel({ order, onChanged }) {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const channel = order.channel_label;
   const status = channelLabelStatus(channel.status);
   const received = channel.status === "recibida";
+
+  const requestLabel = async () => {
+    const warning =
+      "El RPA va a generar la guía de esta OC en el portal de Homecenter (es real). " +
+      "Si aparece una validación, hay que resolverla en el visor del RPA. ¿Continuar?";
+    if (!window.confirm(warning)) return;
+    setBusy("request");
+    setError("");
+    setNotice("");
+    try {
+      const { ok, data } = await api.requestChannelLabel(order.shopify_order_id);
+      if (ok) {
+        setNotice("Pedida al RPA. La guía aparece aquí cuando el RPA termine.");
+        onChanged?.();
+      } else {
+        setError(data?.detail || "No se pudo pedir la guía al RPA.");
+      }
+    } catch {
+      setError("No se pudo conectar con el servidor.");
+    } finally {
+      setBusy("");
+    }
+  };
 
   const download = async (kind) => {
     setBusy(kind);
@@ -217,15 +242,26 @@ function ChannelLabel({ order }) {
           {channel.note}
         </Typography>
       )}
-      {received && (
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.25 }} onClick={(e) => e.stopPropagation()}>
-          <Button size="small" variant="outlined" disabled={!!busy} onClick={() => download("rotulo")}>
-            {busy === "rotulo" ? "Descargando…" : "Descargar rótulo"}
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.25 }} onClick={(e) => e.stopPropagation()}>
+        {received ? (
+          <>
+            <Button size="small" variant="outlined" disabled={!!busy} onClick={() => download("rotulo")}>
+              {busy === "rotulo" ? "Descargando…" : "Descargar rótulo"}
+            </Button>
+            <Button size="small" variant="outlined" disabled={!!busy} onClick={() => download("relacion")}>
+              {busy === "relacion" ? "Descargando…" : "Descargar relación"}
+            </Button>
+          </>
+        ) : (
+          <Button size="small" variant="outlined" disabled={!!busy} onClick={requestLabel}>
+            {busy === "request" ? "Pidiendo…" : "Generar guía (RPA)"}
           </Button>
-          <Button size="small" variant="outlined" disabled={!!busy} onClick={() => download("relacion")}>
-            {busy === "relacion" ? "Descargando…" : "Descargar relación"}
-          </Button>
-        </Box>
+        )}
+      </Box>
+      {notice && (
+        <Alert severity="success" sx={{ mt: 1 }} onClose={() => setNotice("")}>
+          {notice}
+        </Alert>
       )}
       {error && (
         <Alert severity="error" sx={{ mt: 1 }} onClose={() => setError("")}>

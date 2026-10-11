@@ -56,7 +56,9 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
   el motivo en el `title`). "—" si no aplica.
 - **Guía del portal (RPA)** en el acordeón (`ChannelLabel` en
   `OrderExpandedDetail.jsx`): estado, número, fechas y botones "Descargar
-  rótulo" / "Descargar relación" (`api.downloadChannelLabel`, descarga con
+  rótulo" / "Descargar relación" o, si aún no tiene guía, "Generar guía
+  (RPA)" (`api.requestChannelLabel`, con confirmación: la guía es real)
+  (`api.downloadChannelLabel`, descarga con
   la sesión y el nombre del `Content-Disposition`).
 - **Columna "Aviso"**: estado del despacho (`dispatchStatus`), con la
   bodega y los canales avisados en el `title`.

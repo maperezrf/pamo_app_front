@@ -30,6 +30,9 @@ export const api = {
     request(`/api/orders/${shopifyOrderId}/dispatch/label/quote/`, { method: "POST" }),
   generateDispatchLabel: (shopifyOrderId, { carrier, service }) =>
     request(`/api/orders/${shopifyOrderId}/dispatch/label/`, { method: "POST", body: { carrier, service } }),
+  // Botón "Generar guía (RPA)" de Sodimac. Responde {channel_label} o {detail}.
+  requestChannelLabel: (shopifyOrderId) =>
+    request(`/api/orders/${shopifyOrderId}/channel-label/request/`, { method: "POST" }),
   // PDF de la guía que generó un tercero (RPA de Sodimac): kind "rotulo" | "relacion".
   downloadChannelLabel: (shopifyOrderId, kind) =>
     downloadFile(`/api/orders/${shopifyOrderId}/channel-label/${kind}/`),
