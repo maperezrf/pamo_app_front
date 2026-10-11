@@ -50,6 +50,14 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
   Pedidos sin despacho (`dispatch: null`) no muestran el bloque. Etiquetas
   en `orderFormat.js` (`dispatchStatus`, `notificationStatus`,
   `notificationChannelLabel`).
+- **Columna "Guía"** (`orderLabel`): la guía del despacho si ya la tiene
+  (número); si no, en Sodimac, el estado de la guía del RPA
+  (`channel_label`: sin guía, pedida, con guía, error, revisión manual, con
+  el motivo en el `title`). "—" si no aplica.
+- **Guía del portal (RPA)** en el acordeón (`ChannelLabel` en
+  `OrderExpandedDetail.jsx`): estado, número, fechas y botones "Descargar
+  rótulo" / "Descargar relación" (`api.downloadChannelLabel`, descarga con
+  la sesión y el nombre del `Content-Disposition`).
 - **Columna "Aviso"**: estado del despacho (`dispatchStatus`), con la
   bodega y los canales avisados en el `title`.
 - **Botones del despacho** (`components/DispatchActions.jsx`, en el

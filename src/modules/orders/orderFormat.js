@@ -92,6 +92,31 @@ const NOTIFICATION_STATUS = {
 
 export const dispatchStatus = (value) => statusFrom(DISPATCH_STATUS, value);
 
+// Guía que genera un tercero (`channel_label` del contrato; hoy el RPA de
+// Sodimac): estado → [etiqueta, tono].
+const CHANNEL_LABEL_STATUS = {
+  pendiente: ["Sin guía", "neutral"],
+  solicitada: ["Pedida al RPA", "neutral"],
+  recibida: ["Con guía", "success"],
+  error: ["Error del RPA", "error"],
+  manual: ["Revisión manual", "error"],
+};
+
+export const channelLabelStatus = (value) => statusFrom(CHANNEL_LABEL_STATUS, value);
+
+// Guía de un pedido para la columna "Guía": la del despacho si ya la tiene
+// (canal o generada en Envía); si no, la del RPA (Sodimac). null = no aplica.
+export function orderLabel(order) {
+  if (order.dispatch?.tracking_number) {
+    return { label: `Guía ${order.dispatch.tracking_number}`, tone: "success" };
+  }
+  const channel = order.channel_label;
+  if (!channel) return null;
+  const status = channelLabelStatus(channel.status);
+  if (channel.status === "recibida") return { ...status, label: `Guía ${channel.tracking_number}` };
+  return status && { ...status, title: channel.note || undefined };
+}
+
 export const notificationStatus = (value) => statusFrom(NOTIFICATION_STATUS, value);
 
 export const notificationChannelLabel = (value) => NOTIFICATION_CHANNEL[value] ?? value;

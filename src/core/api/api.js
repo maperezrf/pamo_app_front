@@ -30,4 +30,27 @@ export const api = {
     request(`/api/orders/${shopifyOrderId}/dispatch/label/quote/`, { method: "POST" }),
   generateDispatchLabel: (shopifyOrderId, { carrier, service }) =>
     request(`/api/orders/${shopifyOrderId}/dispatch/label/`, { method: "POST", body: { carrier, service } }),
+  // PDF de la guía que generó un tercero (RPA de Sodimac): kind "rotulo" | "relacion".
+  downloadChannelLabel: (shopifyOrderId, kind) =>
+    downloadFile(`/api/orders/${shopifyOrderId}/channel-label/${kind}/`),
 };
+
+// Descarga un archivo con la sesión (cookie) y lo guarda con el nombre que
+// manda el backend en Content-Disposition. Devuelve {ok, status}.
+async function downloadFile(path) {
+  try {
+    const response = await httpClient.get(path, { responseType: "blob" });
+    const disposition = response.headers["content-disposition"] ?? "";
+    const filename = /filename="?([^";]+)"?/.exec(disposition)?.[1] ?? "documento.pdf";
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+    return { ok: true, status: response.status };
+  } catch (error) {
+    if (error.response) return { ok: false, status: error.response.status };
+    throw error;
+  }
+}

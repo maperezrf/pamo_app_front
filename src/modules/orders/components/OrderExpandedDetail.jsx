@@ -1,7 +1,10 @@
-import { Alert, Box, Link, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
+import { useState } from "react";
+import { Alert, Box, Button, Link, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
+import { api } from "../../../core/api/api";
 import StatusChip from "../../../components/data-display/StatusChip";
 import DispatchActions from "./DispatchActions";
 import {
+  channelLabelStatus,
   dispatchStatus,
   formatDateTime,
   formatMoney,
@@ -38,6 +41,8 @@ export default function OrderExpandedDetail({ order, onChanged }) {
         {!isShopify && order.shipment_id && <Info label="Envío" value={order.shipment_id} />}
         {!isShopify && <Info label="Última actualización" value={formatDateTime(order.updated_at)} />}
       </Box>
+
+      {isShopify && order.channel_label && <ChannelLabel order={order} />}
 
       {isShopify && (
         <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1, bgcolor: "background.paper", p: 1.5 }}>
@@ -162,6 +167,70 @@ function DispatchSummary({ dispatch }) {
             );
           })}
         </Box>
+      )}
+    </Box>
+  );
+}
+
+// Guía que generó un tercero (hoy el RPA de Sodimac): estado, número y
+// descarga del rótulo y la relación (`channel_label` del contrato).
+function ChannelLabel({ order }) {
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  const channel = order.channel_label;
+  const status = channelLabelStatus(channel.status);
+  const received = channel.status === "recibida";
+
+  const download = async (kind) => {
+    setBusy(kind);
+    setError("");
+    try {
+      const { ok } = await api.downloadChannelLabel(order.shopify_order_id, kind);
+      if (!ok) setError("No se pudo descargar el documento.");
+    } catch {
+      setError("No se pudo conectar con el servidor.");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  return (
+    <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1, bgcolor: "background.paper", p: 1.5 }}>
+      <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
+        <Typography variant="body2" fontWeight={600}>
+          Guía del portal (RPA)
+        </Typography>
+        {status && <StatusChip {...status} />}
+        {received && (
+          <Typography variant="body2" color="textSecondary">
+            {channel.tracking_number} · recibida {formatDateTime(channel.received_at)}
+          </Typography>
+        )}
+        {!received && channel.requested_at && (
+          <Typography variant="body2" color="textSecondary">
+            pedida {formatDateTime(channel.requested_at)}
+          </Typography>
+        )}
+      </Box>
+      {channel.note && (
+        <Typography variant="body2" color="textSecondary" sx={{ mt: 0.75 }}>
+          {channel.note}
+        </Typography>
+      )}
+      {received && (
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.25 }} onClick={(e) => e.stopPropagation()}>
+          <Button size="small" variant="outlined" disabled={!!busy} onClick={() => download("rotulo")}>
+            {busy === "rotulo" ? "Descargando…" : "Descargar rótulo"}
+          </Button>
+          <Button size="small" variant="outlined" disabled={!!busy} onClick={() => download("relacion")}>
+            {busy === "relacion" ? "Descargando…" : "Descargar relación"}
+          </Button>
+        </Box>
+      )}
+      {error && (
+        <Alert severity="error" sx={{ mt: 1 }} onClose={() => setError("")}>
+          {error}
+        </Alert>
       )}
     </Box>
   );

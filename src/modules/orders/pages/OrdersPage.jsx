@@ -15,6 +15,7 @@ import {
   formatMoney,
   notCreatedStatusLabel,
   notificationChannelLabel,
+  orderLabel,
   shopifyFulfillmentStatus,
   shopifyOrderUrl,
   warehouse,
@@ -78,6 +79,14 @@ const orderColumns = [
     cell: ({ row }) => {
       const bodega = warehouse(row.original.fulfillment);
       return bodega ? <StatusChip label={bodega.label} tone={bodega.tone} title={bodega.detail} /> : "—";
+    },
+  },
+  {
+    id: "label",
+    header: "Guía",
+    cell: ({ row }) => {
+      const label = orderLabel(row.original);
+      return label ? <StatusChip label={label.label} tone={label.tone} title={label.title} /> : "—";
     },
   },
   {
