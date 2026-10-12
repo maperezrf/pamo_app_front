@@ -120,6 +120,7 @@ export default function DispatchActions({ order, onChanged }) {
 // Paso 1: cotizar (no cobra). Paso 2: generar la opción elegida (cobra).
 function GenerateLabelDialog({ order, onClose, onGenerated }) {
   const [options, setOptions] = useState(null);
+  const [route, setRoute] = useState(null);
   const [selected, setSelected] = useState("");
   const [error, setError] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -131,8 +132,12 @@ function GenerateLabelDialog({ order, onClose, onGenerated }) {
       .quoteDispatchLabel(order.shopify_order_id)
       .then(({ ok, data }) => {
         if (ignore) return;
-        if (ok) setOptions(data.options || []);
-        else setError(data?.detail || "No se pudo cotizar.");
+        if (ok) {
+          setOptions(data.options || []);
+          setRoute(data.route || null);
+        } else {
+          setError(data?.detail || "No se pudo cotizar.");
+        }
       })
       .catch(() => {
         if (!ignore) setError("No se pudo conectar con el servidor.");
@@ -169,6 +174,7 @@ function GenerateLabelDialog({ order, onClose, onGenerated }) {
             <CircularProgress size={24} />
           </Box>
         )}
+        {route && <RouteSummary route={route} />}
         {options?.length === 0 && <Typography color="textSecondary">Envía no devolvió opciones para este envío.</Typography>}
         {options?.length > 0 && (
           <RadioGroup value={selected} onChange={(e) => setSelected(e.target.value)}>
@@ -196,5 +202,41 @@ function GenerateLabelDialog({ order, onClose, onGenerated }) {
         </Button>
       </DialogActions>
     </Dialog>
+  );
+}
+
+// Desde dónde sale y a quién llega la guía, para revisarlo antes de pagar.
+function RouteSummary({ route }) {
+  const { origin, destination } = route;
+  const place = (...parts) => parts.filter(Boolean).join(", ");
+  return (
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5, mb: 2 }}>
+      <Box>
+        <Typography variant="caption" color="textSecondary" component="div">
+          Envío desde
+        </Typography>
+        <Typography variant="body2" fontWeight={600}>
+          {origin.name}
+        </Typography>
+        <Typography variant="body2" color="textSecondary">
+          {origin.city || "—"}
+        </Typography>
+      </Box>
+      <Box>
+        <Typography variant="caption" color="textSecondary" component="div">
+          Entrega a
+        </Typography>
+        <Typography variant="body2" fontWeight={600}>
+          {destination.name || "—"}
+        </Typography>
+        <Typography variant="body2" color="textSecondary" sx={{ wordBreak: "break-word" }}>
+          {destination.address || "—"}
+        </Typography>
+        <Typography variant="body2" color="textSecondary">
+          {place(destination.city, destination.region) || "—"}
+          {destination.phone && ` · ${destination.phone}`}
+        </Typography>
+      </Box>
+    </Box>
   );
 }
