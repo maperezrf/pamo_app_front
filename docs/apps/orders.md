@@ -50,6 +50,11 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
   Pedidos sin despacho (`dispatch: null`) no muestran el bloque. Etiquetas
   en `orderFormat.js` (`dispatchStatus`, `notificationStatus`,
   `notificationChannelLabel`).
+- **Recuadro "RPA de guías de Sodimac"** (`components/SodimacRpaPanel.jsx`,
+  debajo de los filtros; oculto si el backend no tiene el RPA configurado):
+  estado del RPA, "Ver en vivo" (visor noVNC, `viewer_url`), "Continuar"
+  (solo con validación pendiente), "Detener" (solo con corrida en curso, con
+  confirmación) y "Actualizar". Se refresca cada 10 s mientras corre.
 - **Columna "Guía"** (`orderLabel`): la guía del despacho si ya la tiene
   (número); si no, en Sodimac, el estado de la guía del RPA
   (`channel_label`: sin guía, pedida, con guía, error, revisión manual, con

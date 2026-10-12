@@ -30,6 +30,11 @@ export const api = {
     request(`/api/orders/${shopifyOrderId}/dispatch/label/quote/`, { method: "POST" }),
   generateDispatchLabel: (shopifyOrderId, { carrier, service }) =>
     request(`/api/orders/${shopifyOrderId}/dispatch/label/`, { method: "POST", body: { carrier, service } }),
+  // Recuadro del RPA de guías de Sodimac: estado (con el enlace del visor),
+  // "Continuar" tras el CAPTCHA y "Detener". Responden el estado o {detail}.
+  sodimacRpaStatus: () => request("/api/orders/sodimac/rpa/status/"),
+  continueSodimacRpa: () => request("/api/orders/sodimac/rpa/continue/", { method: "POST" }),
+  killSodimacRpa: () => request("/api/orders/sodimac/rpa/kill/", { method: "POST" }),
   // Botón "Generar guía (RPA)" de Sodimac. Responde {channel_label} o {detail}.
   requestChannelLabel: (shopifyOrderId) =>
     request(`/api/orders/${shopifyOrderId}/channel-label/request/`, { method: "POST" }),

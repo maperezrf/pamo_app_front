@@ -6,6 +6,7 @@ import DataTable from "../../../components/tables/DataTable";
 import StatusChip from "../../../components/data-display/StatusChip";
 import OrderFilters from "../components/OrderFilters";
 import OrderExpandedDetail from "../components/OrderExpandedDetail";
+import SodimacRpaPanel from "../components/SodimacRpaPanel";
 import MarketplaceLabel from "../components/MarketplaceLabel";
 import {
   customerName,
@@ -300,6 +301,8 @@ export default function OrdersPage() {
       </Tabs>
 
       <OrderFilters filters={filters} onChange={updateQuery} onClear={clearFilters} />
+
+      <SodimacRpaPanel />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
