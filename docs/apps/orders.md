@@ -50,6 +50,29 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
   Pedidos sin despacho (`dispatch: null`) no muestran el bloque. Etiquetas
   en `orderFormat.js` (`dispatchStatus`, `notificationStatus`,
   `notificationChannelLabel`).
+- **Bodegas (Shopify)** (`fulfillment_orders` del contrato,
+  `ShopifyWarehouses` en `OrderExpandedDetail.jsx`): el acordeón de un
+  pedido de Shopify se agrupa por bodega según Shopify. Cada tarjeta
+  (`WarehouseCard`) trae el estado (`fulfillmentOrderStatus`), la guía de
+  Shopify (enlace de rastreo si viene `url`) y su tabla de productos, con
+  el precio de la línea del pedido del mismo SKU. Lo que no está en
+  ninguna bodega va en "Sin bodega en Shopify"; el total del pedido, al
+  final.
+  - **Despacho y botones**: el backend tiene **un** despacho por pedido
+    (bodega propia, todos los productos). Su estado, avisos y botones van
+    dentro de la tarjeta cuya bodega tiene el mismo nombre que la del
+    despacho; las otras dicen "Sin despacho para esta bodega" y no tienen
+    botones, para no avisar a una bodega con productos que no le tocan.
+    Sin despacho y con una sola bodega, los botones van en ella. Si la
+    bodega del despacho no coincide con ninguna, el despacho va en un
+    recuadro aparte con el aviso. Botones por bodega de verdad exigen
+    despachos por fulfillment order en el backend (no hecho).
+  - Sin `fulfillment_orders` (pedido sin datos de Shopify todavía o no
+    creado), el acordeón es el de antes: recuadro del despacho y tabla de
+    productos. En la columna
+  "Bodega", si son varias, un chip "N bodegas" con los nombres en el
+  `title` (`shopifyWarehouses`); con una, la bodega de `fulfillment` como
+  antes.
 - **Recuadro "RPA de guías de Sodimac"** (`components/SodimacRpaPanel.jsx`,
   debajo de los filtros; oculto si el backend no tiene el RPA configurado):
   estado del RPA, "Ver en vivo" (visor noVNC, `viewer_url`), "Continuar"

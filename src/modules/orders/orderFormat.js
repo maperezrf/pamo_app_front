@@ -92,6 +92,26 @@ const NOTIFICATION_STATUS = {
 
 export const dispatchStatus = (value) => statusFrom(DISPATCH_STATUS, value);
 
+// Bodega desde donde sale el pedido según Shopify (`fulfillment_orders` del
+// contrato; `FulfillmentOrderStatus` de Shopify) → [etiqueta, tono].
+const FULFILLMENT_ORDER_STATUS = {
+  OPEN: ["Por despachar", "neutral"],
+  IN_PROGRESS: ["En proceso", "neutral"],
+  SCHEDULED: ["Programado", "neutral"],
+  ON_HOLD: ["En espera", "error"],
+  INCOMPLETE: ["Incompleto", "error"],
+  CLOSED: ["Despachado", "success"],
+};
+
+export const fulfillmentOrderStatus = (value) => statusFrom(FULFILLMENT_ORDER_STATUS, value);
+
+// Columna "Bodega" cuando Shopify reparte el pedido en varias bodegas.
+export function shopifyWarehouses(fulfillmentOrders) {
+  const names = [...new Set((fulfillmentOrders ?? []).map((fo) => fo.location_name).filter(Boolean))];
+  if (names.length < 2) return null;
+  return { label: `${names.length} bodegas`, tone: "neutral", title: names.join(" + ") };
+}
+
 // Guía que genera un tercero (`channel_label` del contrato; hoy el RPA de
 // Sodimac): estado → [etiqueta, tono].
 const CHANNEL_LABEL_STATUS = {

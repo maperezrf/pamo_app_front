@@ -19,6 +19,7 @@ import {
   orderLabel,
   shopifyFulfillmentStatus,
   shopifyOrderUrl,
+  shopifyWarehouses,
   warehouse,
 } from "../orderFormat";
 
@@ -78,6 +79,9 @@ const orderColumns = [
     id: "warehouse",
     header: "Bodega",
     cell: ({ row }) => {
+      // Varias bodegas según Shopify: el resumen manda (detalle al desplegar).
+      const several = shopifyWarehouses(row.original.fulfillment_orders);
+      if (several) return <StatusChip {...several} />;
       const bodega = warehouse(row.original.fulfillment);
       return bodega ? <StatusChip label={bodega.label} tone={bodega.tone} title={bodega.detail} /> : "—";
     },

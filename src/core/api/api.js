@@ -50,6 +50,8 @@ export const api = {
   // PDF de la guía que generó un tercero (RPA de Sodimac): kind "rotulo" | "relacion".
   downloadChannelLabel: (shopifyOrderId, kind) =>
     downloadFile(`/api/orders/${shopifyOrderId}/channel-label/${kind}/`),
+  // PDF de la guía generada en Envía (guardada en el despacho).
+  downloadDispatchLabel: (shopifyOrderId) => downloadFile(`/api/orders/${shopifyOrderId}/dispatch/label/file/`),
 };
 
 // Descarga un archivo con la sesión (cookie) y lo guarda con el nombre que

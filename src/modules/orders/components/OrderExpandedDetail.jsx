@@ -24,6 +24,7 @@ import {
   dispatchStatus,
   formatDateTime,
   formatMoney,
+  fulfillmentOrderStatus,
   notificationChannelLabel,
   notificationStatus,
   shopifyProductSearchUrl,
@@ -60,54 +61,209 @@ export default function OrderExpandedDetail({ order, onChanged }) {
 
       {isShopify && order.channel_label && <ChannelLabel order={order} onChanged={onChanged} />}
 
-      {isShopify && (
-        <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1, bgcolor: "background.paper", p: 1.5 }}>
-          {order.dispatch ? (
-            <DispatchSummary dispatch={order.dispatch} />
-          ) : (
-            <Typography variant="body2" color="textSecondary">
-              Sin despacho todavía: "Notificar a proveedor" asigna la bodega y avisa.
-            </Typography>
+      {isShopify && (order.fulfillment_orders ?? []).length > 0 ? (
+        <ShopifyWarehouses order={order} onChanged={onChanged} />
+      ) : (
+        <>
+          {isShopify && (
+            <Card>
+              <DispatchBlock order={order} onChanged={onChanged} />
+            </Card>
           )}
-          <DispatchActions order={order} onChanged={onChanged} />
-        </Box>
+          <ProductTable
+            items={order.items}
+            currency={order.currency}
+            linkToShopify={isShopify}
+            heading={isShopify ? "Producto" : "SKU del marketplace"}
+            total={order.total}
+          />
+        </>
       )}
+    </Box>
+  );
+}
 
-      <Table size="small" sx={{ bgcolor: "background.paper", border: 1, borderColor: "divider" }}>
-        <TableHead>
-          <TableRow>
-            <TableCell>{isShopify ? "Producto" : "SKU del marketplace"}</TableCell>
-            <TableCell align="right">Cant.</TableCell>
-            <TableCell align="right">Precio unitario</TableCell>
-            <TableCell align="right">Total</TableCell>
+// Pedido de Shopify agrupado por las bodegas desde donde sale según Shopify
+// (`fulfillment_orders`), cada una con sus productos. El despacho de este
+// sistema (`dispatch`, uno por pedido con todos los productos) y sus botones
+// van en la bodega que coincide con la suya: así nunca se avisa a una bodega
+// con productos que no le tocan. Sin despacho y con una sola bodega, los
+// botones van en ella; si no hay dónde ponerlo, va en un recuadro aparte.
+function ShopifyWarehouses({ order, onChanged }) {
+  const fulfillmentOrders = order.fulfillment_orders;
+  const dispatchName = order.dispatch?.location_name || "";
+  const hostIndex = order.dispatch
+    ? fulfillmentOrders.findIndex((fo) => dispatchName && fo.location_name === dispatchName)
+    : fulfillmentOrders.length === 1
+      ? 0
+      : -1;
+  const leftovers = itemsOutsideWarehouses(order.items, fulfillmentOrders);
+
+  return (
+    <>
+      {hostIndex === -1 && (
+        <Card>
+          {order.dispatch && (
+            <Alert severity="warning" sx={{ mb: 1.25 }}>
+              {dispatchName
+                ? `Nuestra bodega (${dispatchName}) no coincide con ninguna de las de Shopify.`
+                : "El despacho no tiene bodega todavía."}
+            </Alert>
+          )}
+          <DispatchBlock order={order} onChanged={onChanged} />
+        </Card>
+      )}
+      {fulfillmentOrders.map((fo, index) => (
+        <WarehouseCard key={fo.id} fo={fo} order={order}>
+          {index === hostIndex ? (
+            <DispatchBlock order={order} onChanged={onChanged} />
+          ) : (
+            hostIndex !== -1 && (
+              <Typography variant="body2" color="textSecondary">
+                Sin despacho para esta bodega.
+              </Typography>
+            )
+          )}
+        </WarehouseCard>
+      ))}
+      {leftovers.length > 0 && (
+        <Card>
+          <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+            Sin bodega en Shopify
+          </Typography>
+          <ProductTable items={leftovers} currency={order.currency} linkToShopify />
+        </Card>
+      )}
+      <Typography variant="body2" fontWeight={700} sx={{ textAlign: "right", pr: 2 }}>
+        Total {formatMoney(order.total, order.currency)}
+      </Typography>
+    </>
+  );
+}
+
+// Una bodega de Shopify: nombre, estado, guía de Shopify y sus productos
+// (con el precio de la línea del pedido del mismo SKU).
+function WarehouseCard({ fo, order, children }) {
+  const status = fulfillmentOrderStatus(fo.status);
+  const { tracking } = fo;
+  const items = fo.items.map((item) => withPrice(item, order.items));
+  return (
+    <Card>
+      <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 1 }}>
+        <Typography variant="body2" fontWeight={600}>
+          Bodega: {fo.location_name || "Sin bodega"}
+        </Typography>
+        {status && <StatusChip {...status} />}
+        {tracking.number && (
+          <Typography variant="body2" color="textSecondary">
+            Guía en Shopify{" "}
+            {tracking.url ? (
+              <Link href={tracking.url} target="_blank" rel="noopener noreferrer" underline="hover">
+                {tracking.number}
+              </Link>
+            ) : (
+              tracking.number
+            )}
+            {tracking.company && tracking.company !== "Other" && ` · ${tracking.company}`}
+          </Typography>
+        )}
+      </Box>
+      <ProductTable items={items} currency={order.currency} linkToShopify />
+      {children && <Box sx={{ mt: 1.25 }}>{children}</Box>}
+    </Card>
+  );
+}
+
+// Estado del despacho con sus botones; sin despacho, el mensaje de siempre.
+function DispatchBlock({ order, onChanged }) {
+  return (
+    <>
+      {order.dispatch ? (
+        <DispatchSummary dispatch={order.dispatch} shopifyOrderId={order.shopify_order_id} />
+      ) : (
+        <Typography variant="body2" color="textSecondary">
+          Sin despacho todavía: "Notificar a proveedor" asigna la bodega y avisa.
+        </Typography>
+      )}
+      <DispatchActions order={order} onChanged={onChanged} />
+    </>
+  );
+}
+
+function Card({ children }) {
+  return (
+    <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1, bgcolor: "background.paper", p: 1.5 }}>
+      {children}
+    </Box>
+  );
+}
+
+// Producto de una bodega con el precio unitario de la línea del pedido del
+// mismo SKU (Shopify no lo trae en el fulfillment order).
+function withPrice(item, orderItems) {
+  const line = orderItems.find((orderItem) => orderItem.sku === item.sku);
+  const unit = line?.unit_price ?? null;
+  const total = unit == null ? null : (Number(unit) * item.quantity).toFixed(2);
+  return { ...item, name: item.name || line?.name || "", unit_price: unit, line_total: total };
+}
+
+// Líneas del pedido (o la parte de ellas) que no están en ninguna bodega de
+// Shopify, p. ej. productos sin envío. Se comparan cantidades por SKU.
+function itemsOutsideWarehouses(orderItems, fulfillmentOrders) {
+  const assigned = {};
+  fulfillmentOrders.forEach((fo) =>
+    fo.items.forEach((item) => {
+      assigned[item.sku] = (assigned[item.sku] ?? 0) + item.quantity;
+    }),
+  );
+  const result = [];
+  orderItems.forEach((item) => {
+    const covered = Math.min(assigned[item.sku] ?? 0, item.quantity);
+    assigned[item.sku] = (assigned[item.sku] ?? 0) - covered;
+    const missing = item.quantity - covered;
+    if (missing > 0) result.push(withPrice({ sku: item.sku, name: item.name, quantity: missing }, orderItems));
+  });
+  return result;
+}
+
+function ProductTable({ items, currency, linkToShopify, heading = "Producto", total }) {
+  return (
+    <Table size="small" sx={{ bgcolor: "background.paper", border: 1, borderColor: "divider" }}>
+      <TableHead>
+        <TableRow>
+          <TableCell>{heading}</TableCell>
+          <TableCell align="right">Cant.</TableCell>
+          <TableCell align="right">Precio unitario</TableCell>
+          <TableCell align="right">Total</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {items.map((item, index) => (
+          <TableRow key={`${item.sku}-${index}`}>
+            <TableCell>
+              <ProductName item={item} linkToShopify={linkToShopify} />
+            </TableCell>
+            <TableCell align="right">{item.quantity}</TableCell>
+            <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+              {formatMoney(item.unit_price, currency)}
+            </TableCell>
+            <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+              {formatMoney(item.line_total, currency)}
+            </TableCell>
           </TableRow>
-        </TableHead>
-        <TableBody>
-          {order.items.map((item, index) => (
-            <TableRow key={`${item.sku}-${index}`}>
-              <TableCell>
-                <ProductName item={item} linkToShopify={isShopify} />
-              </TableCell>
-              <TableCell align="right">{item.quantity}</TableCell>
-              <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
-                {formatMoney(item.unit_price, order.currency)}
-              </TableCell>
-              <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
-                {formatMoney(item.line_total, order.currency)}
-              </TableCell>
-            </TableRow>
-          ))}
+        ))}
+        {total !== undefined && (
           <TableRow>
             <TableCell colSpan={3} align="right" sx={{ fontWeight: 700, borderBottom: 0 }}>
               Total
             </TableCell>
             <TableCell align="right" sx={{ fontWeight: 700, whiteSpace: "nowrap", borderBottom: 0 }}>
-              {formatMoney(order.total, order.currency)}
+              {formatMoney(total, currency)}
             </TableCell>
           </TableRow>
-        </TableBody>
-      </Table>
-    </Box>
+        )}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -137,8 +293,24 @@ function ProductName({ item, linkToShopify }) {
 }
 
 // Despacho a la bodega: a quién le toca, en qué va y cómo se le avisó.
-function DispatchSummary({ dispatch }) {
+function DispatchSummary({ dispatch, shopifyOrderId }) {
   const status = dispatchStatus(dispatch.status);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
+
+  const downloadLabel = async () => {
+    setDownloading(true);
+    setDownloadError("");
+    try {
+      const { ok } = await api.downloadDispatchLabel(shopifyOrderId);
+      if (!ok) setDownloadError("No se pudo descargar la guía.");
+    } catch {
+      setDownloadError("No se pudo conectar con el servidor.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <Box>
       <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
@@ -153,7 +325,25 @@ function DispatchSummary({ dispatch }) {
             {dispatch.label_source === "canal" && " · del canal"}
           </Typography>
         )}
+        {dispatch.label_source === "envia" && (
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={downloading}
+            onClick={(e) => {
+              e.stopPropagation();
+              downloadLabel();
+            }}
+          >
+            {downloading ? "Descargando…" : "Descargar guía"}
+          </Button>
+        )}
       </Box>
+      {downloadError && (
+        <Typography variant="body2" color="error" sx={{ mt: 0.75 }}>
+          {downloadError}
+        </Typography>
+      )}
       {dispatch.note && (
         <Typography variant="body2" color="textSecondary" sx={{ mt: 0.75 }}>
           {dispatch.note}
