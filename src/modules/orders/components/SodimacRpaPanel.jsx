@@ -18,13 +18,18 @@ const RPA_STATE = {
   ERROR: ["Error", "error"],
 };
 
+// El visor se incrusta en solo lectura salvo cuando hay una validación
+// pendiente: así nadie hace clic por accidente en el Chrome del RPA.
+const viewerSrc = (url, interactive) => (interactive ? url : `${url}&view_only=true`);
+
 // Recuadro "RPA de guías de Sodimac": en qué va, ver en vivo (visor noVNC
-// del RPA), continuar tras resolver el CAPTCHA y detener la corrida.
+// del RPA incrustado), continuar tras resolver el CAPTCHA y detener la corrida.
 // Contrato: backend/docs/contracts/API.md ("sodimac/rpa/status").
 export default function SodimacRpaPanel() {
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -91,8 +96,8 @@ export default function SodimacRpaPanel() {
         )}
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, ml: { sm: "auto" } }}>
           {status.viewer_url && (
-            <Button size="small" variant="outlined" component={Link} href={status.viewer_url} target="_blank" rel="noopener noreferrer">
-              Ver en vivo
+            <Button size="small" variant={viewerOpen ? "contained" : "outlined"} onClick={() => setViewerOpen((open) => !open)}>
+              {viewerOpen ? "Ocultar visor" : "Ver en vivo"}
             </Button>
           )}
           {status.waiting_human && (
@@ -132,6 +137,26 @@ export default function SodimacRpaPanel() {
           Resuelve la validación en "Ver en vivo" y luego dale "Continuar".
           {status.waiting_reason && ` (${status.waiting_reason})`}
         </Typography>
+      )}
+      {viewerOpen && status.viewer_url && (
+        <Box sx={{ mt: 1 }}>
+          <Box
+            component="iframe"
+            // La key fuerza a recargar el visor al cambiar de solo lectura a control.
+            key={status.waiting_human ? "control" : "view"}
+            title="Visor en vivo del RPA de Sodimac"
+            src={viewerSrc(status.viewer_url, status.waiting_human)}
+            sx={{ display: "block", width: "100%", aspectRatio: "16 / 9", border: 1, borderColor: "divider", borderRadius: 1, bgcolor: "background.default" }}
+          />
+          <Typography variant="caption" color="textSecondary" sx={{ display: "block", mt: 0.5 }}>
+            {status.waiting_human ? "Con control: resuelve la validación aquí." : "Solo lectura."} Si el visor
+            no carga (el RPA lo enciende solo al aparecer un CAPTCHA), ábrelo{" "}
+            <Link href={status.viewer_url} target="_blank" rel="noopener noreferrer">
+              en otra pestaña
+            </Link>
+            .
+          </Typography>
+        </Box>
       )}
       {message && (
         <Alert severity={message.severity} sx={{ mt: 1 }} onClose={() => setMessage(null)}>

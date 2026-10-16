@@ -75,7 +75,10 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
   antes.
 - **Recuadro "RPA de guías de Sodimac"** (`components/SodimacRpaPanel.jsx`,
   debajo de los filtros; oculto si el backend no tiene el RPA configurado):
-  estado del RPA, "Ver en vivo" (visor noVNC, `viewer_url`), "Continuar"
+  estado del RPA, "Ver en vivo" (muestra/oculta el visor noVNC `viewer_url`
+  incrustado en un iframe: con `&view_only=true` salvo con validación
+  pendiente, cuando permite control; enlace para abrirlo en otra pestaña si
+  el iframe no carga), "Continuar"
   (solo con validación pendiente), "Detener" (solo con corrida en curso, con
   confirmación) y "Actualizar". Se refresca cada 10 s mientras corre.
 - **Columna "Guía"** (`orderLabel`): la guía del despacho si ya la tiene
