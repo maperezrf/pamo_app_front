@@ -104,7 +104,11 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
   acordeón de pedidos de Shopify): "Traer guía" (Mercado Libre, Falabella),
   "Generar guía" (tienda web y Madecentro: diálogo que cotiza, muestra
   la ruta —envío desde la bodega, entrega al cliente con dirección y
-  ciudad— y las opciones con precio, y genera la elegida; deshabilitado si ya tiene guía
+  ciudad— y las opciones con precio, y genera la elegida. Peso (kg) y
+  medidas (cm) del paquete son editables, arrancan en 1 kg 10×10×10 y se
+  cotiza al abrir con esos valores; la guía se genera con el `package` que
+  devolvió la cotización, y si se cambia una medida las opciones se ocultan
+  hasta volver a "Cotizar". Deshabilitado si ya tiene guía
   generada o, solo en la tienda web, si la bodega crea su propia guía,
   `location_creates_own_label`) y "Notificar a proveedor". Sodimac no lleva
   botón de guía: la genera el RPA y el aviso la toma sola. Piden confirmación, muestran el `detail` del

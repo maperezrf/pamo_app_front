@@ -28,12 +28,17 @@ export const api = {
     request(`/api/orders/${shopifyOrderId}/dispatch/notify/`, { method: "POST", body: { dispatch_id: dispatchId } }),
   fetchDispatchLabel: (shopifyOrderId, dispatchId) =>
     request(`/api/orders/${shopifyOrderId}/dispatch/label/fetch/`, { method: "POST", body: { dispatch_id: dispatchId } }),
-  quoteDispatchLabel: (shopifyOrderId, dispatchId) =>
-    request(`/api/orders/${shopifyOrderId}/dispatch/label/quote/`, { method: "POST", body: { dispatch_id: dispatchId } }),
-  generateDispatchLabel: (shopifyOrderId, dispatchId, { carrier, service }) =>
+  // `pkg`: paquete {weight, length, width, height} en kg y cm; la guía se
+  // genera con el mismo que se cotizó (el backend lo guarda en `label_package`).
+  quoteDispatchLabel: (shopifyOrderId, dispatchId, pkg) =>
+    request(`/api/orders/${shopifyOrderId}/dispatch/label/quote/`, {
+      method: "POST",
+      body: { dispatch_id: dispatchId, package: pkg },
+    }),
+  generateDispatchLabel: (shopifyOrderId, dispatchId, { carrier, service, pkg }) =>
     request(`/api/orders/${shopifyOrderId}/dispatch/label/`, {
       method: "POST",
-      body: { dispatch_id: dispatchId, carrier, service },
+      body: { dispatch_id: dispatchId, carrier, service, package: pkg },
     }),
   // Recuadro del RPA de guías de Sodimac: estado (con el enlace del visor),
   // "Continuar" tras el CAPTCHA y "Detener". Responden el estado o {detail}.

@@ -11,6 +11,7 @@ import {
   FormControlLabel,
   Radio,
   RadioGroup,
+  TextField,
   Typography,
 } from "@mui/material";
 import { api } from "../../../core/api/api";
@@ -22,6 +23,15 @@ const CHANNEL_LABELS = ["mercadolibre", "falabella"];
 // Sin guía del canal: se genera en Envía. Tienda web (y Addi, cotizaciones)
 // y Madecentro.
 const GENERATED_LABELS = ["shopify", "madecentro"];
+// Paquete de la guía en Envía (kg y cm); arranca en el por defecto del backend.
+const PACKAGE_FIELDS = [
+  { key: "weight", label: "Peso (kg)" },
+  { key: "length", label: "Largo (cm)" },
+  { key: "width", label: "Ancho (cm)" },
+  { key: "height", label: "Alto (cm)" },
+];
+const DEFAULT_PACKAGE = { weight: "1", length: "10", width: "10", height: "10" };
+const toNumber = (value) => Number(String(value).trim().replace(",", "."));
 
 // Botones de UN despacho de un pedido de Shopify (`dispatch`, null si aún
 // no existe): traer o generar la guía y avisar a la bodega. Un pedido que
@@ -132,45 +142,62 @@ export default function DispatchActions({ order, dispatch, onChanged }) {
   );
 }
 
-// Paso 1: cotizar (no cobra). Paso 2: generar la opción elegida (cobra).
+// Paso 1: cotizar (no cobra) con el peso y las medidas del paquete. Paso 2:
+// generar la opción elegida (cobra) con el MISMO paquete cotizado: si se
+// cambia una medida, las opciones dejan de valer hasta cotizar de nuevo.
 function GenerateLabelDialog({ order, dispatch, onClose, onGenerated }) {
   const dispatchId = dispatch?.id;
+  const [pkg, setPkg] = useState(DEFAULT_PACKAGE);
+  const [quoted, setQuoted] = useState(null); // paquete de la última cotización (del backend)
+  const [quoting, setQuoting] = useState(false);
   const [options, setOptions] = useState(null);
   const [route, setRoute] = useState(null);
   const [selected, setSelected] = useState("");
   const [error, setError] = useState("");
   const [generating, setGenerating] = useState(false);
 
-  // Cotiza una vez al abrir (no cobra).
+  const stale = !quoted || PACKAGE_FIELDS.some(({ key }) => toNumber(pkg[key]) !== quoted[key]);
+  const invalid = PACKAGE_FIELDS.some(({ key }) => !(toNumber(pkg[key]) > 0));
+
+  const runQuote = async (values, isIgnored = () => false) => {
+    setQuoting(true);
+    setError("");
+    setSelected("");
+    try {
+      const { ok, data } = await api.quoteDispatchLabel(order.shopify_order_id, dispatchId, values);
+      if (isIgnored()) return;
+      if (ok) {
+        setOptions(data.options || []);
+        setRoute(data.route || null);
+        setQuoted(data.package || null);
+      } else {
+        setError(data?.detail || "No se pudo cotizar.");
+      }
+    } catch {
+      if (!isIgnored()) setError("No se pudo conectar con el servidor.");
+    } finally {
+      if (!isIgnored()) setQuoting(false);
+    }
+  };
+
+  // Cotiza al abrir con el paquete por defecto (no cobra).
   useEffect(() => {
     let ignore = false;
-    api
-      .quoteDispatchLabel(order.shopify_order_id, dispatchId)
-      .then(({ ok, data }) => {
-        if (ignore) return;
-        if (ok) {
-          setOptions(data.options || []);
-          setRoute(data.route || null);
-        } else {
-          setError(data?.detail || "No se pudo cotizar.");
-        }
-      })
-      .catch(() => {
-        if (!ignore) setError("No se pudo conectar con el servidor.");
-      });
+    runQuote(DEFAULT_PACKAGE, () => ignore);
     return () => {
       ignore = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order.shopify_order_id, dispatchId]);
 
-  const option = options?.find((o) => `${o.carrier}|${o.service}` === selected);
+  const option = !stale ? options?.find((o) => `${o.carrier}|${o.service}` === selected) : undefined;
 
   const generate = async () => {
     if (!option) return;
     setGenerating(true);
     setError("");
     try {
-      const { ok, data } = await api.generateDispatchLabel(order.shopify_order_id, dispatchId, option);
+      const { ok, data } = await api.generateDispatchLabel(order.shopify_order_id, dispatchId, { ...option, pkg: quoted });
       if (ok) onGenerated();
       else setError(data?.detail || "No se pudo generar la guía.");
     } catch {
@@ -188,14 +215,45 @@ function GenerateLabelDialog({ order, dispatch, onClose, onGenerated }) {
       </DialogTitle>
       <DialogContent dividers>
         {error && <Alert severity="error" sx={{ mb: 2, wordBreak: "break-word" }}>{error}</Alert>}
-        {options === null && !error && (
+        {route && <RouteSummary route={route} />}
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(4, 1fr)" }, gap: 1, mb: 1 }}>
+          {PACKAGE_FIELDS.map(({ key, label }) => (
+            <TextField
+              key={key}
+              size="small"
+              label={label}
+              value={pkg[key]}
+              disabled={generating}
+              error={!(toNumber(pkg[key]) > 0)}
+              onChange={(e) => setPkg((current) => ({ ...current, [key]: e.target.value }))}
+              slotProps={{ htmlInput: { inputMode: "decimal" } }}
+            />
+          ))}
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+          <Button
+            size="small"
+            variant={stale && quoted ? "contained" : "outlined"}
+            disabled={quoting || generating || invalid || !stale}
+            onClick={() => runQuote(Object.fromEntries(PACKAGE_FIELDS.map(({ key }) => [key, toNumber(pkg[key])])))}
+          >
+            {quoting ? <CircularProgress size={16} color="inherit" /> : "Cotizar"}
+          </Button>
+          {stale && quoted && !quoting && (
+            <Typography variant="caption" color="warning.main">
+              Cambiaste el paquete: cotiza de nuevo antes de generar.
+            </Typography>
+          )}
+        </Box>
+        {quoting && options === null && (
           <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
             <CircularProgress size={24} />
           </Box>
         )}
-        {route && <RouteSummary route={route} />}
-        {options?.length === 0 && <Typography color="textSecondary">Envía no devolvió opciones para este envío.</Typography>}
-        {options?.length > 0 && (
+        {!stale && options?.length === 0 && (
+          <Typography color="textSecondary">Envía no devolvió opciones para este envío.</Typography>
+        )}
+        {!stale && options?.length > 0 && (
           <RadioGroup value={selected} onChange={(e) => setSelected(e.target.value)}>
             {options.map((o) => (
               <FormControlLabel
@@ -208,8 +266,8 @@ function GenerateLabelDialog({ order, dispatch, onClose, onGenerated }) {
           </RadioGroup>
         )}
         <Typography variant="caption" color="textSecondary" component="p" sx={{ mt: 1.5 }}>
-          Desde la bodega asignada, paquete por defecto de 1 kg (10×10×10 cm). Generar la guía cobra el envío a la
-          cuenta de Envía.
+          Desde la bodega asignada, con el peso y las medidas de arriba (la guía se genera con el paquete cotizado).
+          Generar la guía cobra el envío a la cuenta de Envía.
         </Typography>
       </DialogContent>
       <DialogActions>
