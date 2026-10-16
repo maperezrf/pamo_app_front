@@ -23,15 +23,19 @@ const CHANNEL_LABELS = ["mercadolibre", "falabella"];
 // y Madecentro.
 const GENERATED_LABELS = ["shopify", "madecentro"];
 
-// Botones del despacho de un pedido de Shopify: traer o generar la guía y
-// avisar a la bodega. Acciones manuales para probar el flujo de forma
-// controlada (contrato: backend/docs/contracts/API.md, "dispatch").
-export default function DispatchActions({ order, onChanged }) {
+// Botones de UN despacho de un pedido de Shopify (`dispatch`, null si aún
+// no existe): traer o generar la guía y avisar a la bodega. Un pedido que
+// Shopify repartió tiene un despacho por bodega, cada uno con sus botones.
+// Acciones manuales para probar el flujo de forma controlada (contrato:
+// backend/docs/contracts/API.md, "dispatches").
+export default function DispatchActions({ order, dispatch, onChanged }) {
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState(null);
   const [quoteOpen, setQuoteOpen] = useState(false);
-  const dispatch = order.dispatch;
+  const dispatchId = dispatch?.id;
   const labelGenerated = dispatch?.label_source === "envia";
+  // Aviso por bodega de un pedido repartido: fase 2 (todavía no disponible).
+  const splitNotify = Boolean(dispatch?.split);
   // La bodega genera la guía de los pedidos de la tienda web (parámetro de la bodega).
   const warehouseLabel = order.marketplace === "shopify" && Boolean(dispatch?.location_creates_own_label);
 
@@ -56,7 +60,11 @@ export default function DispatchActions({ order, onChanged }) {
   const notify = () => {
     const target = dispatch?.location_name || "la bodega asignada";
     if (!window.confirm(`Se avisará a ${target} por sus canales configurados. ¿Continuar?`)) return;
-    run("notify", () => api.notifyDispatch(order.shopify_order_id), "Aviso procesado; revisa el estado de cada canal.");
+    run(
+      "notify",
+      () => api.notifyDispatch(order.shopify_order_id, dispatchId),
+      "Aviso procesado; revisa el estado de cada canal.",
+    );
   };
 
   const fetchLabel = () => {
@@ -65,7 +73,7 @@ export default function DispatchActions({ order, onChanged }) {
         ? "En Mercado Libre, si la guía no se ha impreso, quedará marcada como impresa. ¿Continuar?"
         : "Se traerá la guía del canal. ¿Continuar?";
     if (!window.confirm(warning)) return;
-    run("label", () => api.fetchDispatchLabel(order.shopify_order_id), "Guía traída del canal.");
+    run("label", () => api.fetchDispatchLabel(order.shopify_order_id, dispatchId), "Guía traída del canal.");
   };
 
   return (
@@ -93,7 +101,13 @@ export default function DispatchActions({ order, onChanged }) {
             Generar guía
           </Button>
         )}
-        <Button size="small" variant="contained" disabled={!!busy} onClick={notify}>
+        <Button
+          size="small"
+          variant="contained"
+          disabled={!!busy || splitNotify}
+          title={splitNotify ? "Pedido repartido en varias bodegas: el aviso por bodega aún no está disponible" : undefined}
+          onClick={notify}
+        >
           {busy === "notify" ? <CircularProgress size={16} color="inherit" /> : "Notificar a proveedor"}
         </Button>
       </Box>
@@ -105,6 +119,7 @@ export default function DispatchActions({ order, onChanged }) {
       {quoteOpen && (
         <GenerateLabelDialog
           order={order}
+          dispatch={dispatch}
           onClose={() => setQuoteOpen(false)}
           onGenerated={() => {
             setQuoteOpen(false);
@@ -118,7 +133,8 @@ export default function DispatchActions({ order, onChanged }) {
 }
 
 // Paso 1: cotizar (no cobra). Paso 2: generar la opción elegida (cobra).
-function GenerateLabelDialog({ order, onClose, onGenerated }) {
+function GenerateLabelDialog({ order, dispatch, onClose, onGenerated }) {
+  const dispatchId = dispatch?.id;
   const [options, setOptions] = useState(null);
   const [route, setRoute] = useState(null);
   const [selected, setSelected] = useState("");
@@ -129,7 +145,7 @@ function GenerateLabelDialog({ order, onClose, onGenerated }) {
   useEffect(() => {
     let ignore = false;
     api
-      .quoteDispatchLabel(order.shopify_order_id)
+      .quoteDispatchLabel(order.shopify_order_id, dispatchId)
       .then(({ ok, data }) => {
         if (ignore) return;
         if (ok) {
@@ -145,7 +161,7 @@ function GenerateLabelDialog({ order, onClose, onGenerated }) {
     return () => {
       ignore = true;
     };
-  }, [order.shopify_order_id]);
+  }, [order.shopify_order_id, dispatchId]);
 
   const option = options?.find((o) => `${o.carrier}|${o.service}` === selected);
 
@@ -154,7 +170,7 @@ function GenerateLabelDialog({ order, onClose, onGenerated }) {
     setGenerating(true);
     setError("");
     try {
-      const { ok, data } = await api.generateDispatchLabel(order.shopify_order_id, option);
+      const { ok, data } = await api.generateDispatchLabel(order.shopify_order_id, dispatchId, option);
       if (ok) onGenerated();
       else setError(data?.detail || "No se pudo generar la guía.");
     } catch {
@@ -166,7 +182,10 @@ function GenerateLabelDialog({ order, onClose, onGenerated }) {
 
   return (
     <Dialog open onClose={generating ? undefined : onClose} fullWidth maxWidth="xs" onClick={(e) => e.stopPropagation()}>
-      <DialogTitle>Generar guía · pedido {order.shopify_order_name}</DialogTitle>
+      <DialogTitle>
+        Generar guía · pedido {order.shopify_order_name}
+        {dispatch?.split && dispatch.location_name ? ` · ${dispatch.location_name}` : ""}
+      </DialogTitle>
       <DialogContent dividers>
         {error && <Alert severity="error" sx={{ mb: 2, wordBreak: "break-word" }}>{error}</Alert>}
         {options === null && !error && (

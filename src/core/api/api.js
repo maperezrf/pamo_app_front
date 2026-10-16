@@ -21,15 +21,20 @@ export const api = {
   menu: () => request("/api/auth/menu/"),
   pingAdmin: () => request("/api/auth/ping-admin/"),
   listOrders: (params) => request("/api/orders/", { params }),
-  // Despacho de UN pedido (botones del panel). Responden {dispatch} o {detail}.
-  notifyDispatch: (shopifyOrderId) =>
-    request(`/api/orders/${shopifyOrderId}/dispatch/notify/`, { method: "POST" }),
-  fetchDispatchLabel: (shopifyOrderId) =>
-    request(`/api/orders/${shopifyOrderId}/dispatch/label/fetch/`, { method: "POST" }),
-  quoteDispatchLabel: (shopifyOrderId) =>
-    request(`/api/orders/${shopifyOrderId}/dispatch/label/quote/`, { method: "POST" }),
-  generateDispatchLabel: (shopifyOrderId, { carrier, service }) =>
-    request(`/api/orders/${shopifyOrderId}/dispatch/label/`, { method: "POST", body: { carrier, service } }),
+  // Despacho de UN pedido (botones del panel). `dispatchId`: el despacho de
+  // la bodega (obligatorio si el pedido sale de varias). Responden
+  // {dispatch, dispatches} o {detail}.
+  notifyDispatch: (shopifyOrderId, dispatchId) =>
+    request(`/api/orders/${shopifyOrderId}/dispatch/notify/`, { method: "POST", body: { dispatch_id: dispatchId } }),
+  fetchDispatchLabel: (shopifyOrderId, dispatchId) =>
+    request(`/api/orders/${shopifyOrderId}/dispatch/label/fetch/`, { method: "POST", body: { dispatch_id: dispatchId } }),
+  quoteDispatchLabel: (shopifyOrderId, dispatchId) =>
+    request(`/api/orders/${shopifyOrderId}/dispatch/label/quote/`, { method: "POST", body: { dispatch_id: dispatchId } }),
+  generateDispatchLabel: (shopifyOrderId, dispatchId, { carrier, service }) =>
+    request(`/api/orders/${shopifyOrderId}/dispatch/label/`, {
+      method: "POST",
+      body: { dispatch_id: dispatchId, carrier, service },
+    }),
   // Recuadro del RPA de guías de Sodimac: estado (con el enlace del visor),
   // "Continuar" tras el CAPTCHA y "Detener". Responden el estado o {detail}.
   sodimacRpaStatus: () => request("/api/orders/sodimac/rpa/status/"),
@@ -51,7 +56,8 @@ export const api = {
   downloadChannelLabel: (shopifyOrderId, kind) =>
     downloadFile(`/api/orders/${shopifyOrderId}/channel-label/${kind}/`),
   // PDF de la guía generada en Envía (guardada en el despacho).
-  downloadDispatchLabel: (shopifyOrderId) => downloadFile(`/api/orders/${shopifyOrderId}/dispatch/label/file/`),
+  downloadDispatchLabel: (shopifyOrderId, dispatchId) =>
+    downloadFile(`/api/orders/${shopifyOrderId}/dispatch/label/file/${dispatchId ? `?dispatch_id=${dispatchId}` : ""}`),
 };
 
 // Descarga un archivo con la sesión (cookie) y lo guarda con el nombre que

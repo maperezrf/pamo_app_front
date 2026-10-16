@@ -43,11 +43,13 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
   enlaza. `<admin>` es `VITE_SHOPIFY_ADMIN_URL`
   (`https://admin.shopify.com/store/<tienda>`, no es secreta); sin ella, se
   muestran los textos sin enlace.
-- **Despacho a bodega** (`dispatch` del contrato): en el acordeón de un
-  pedido de Shopify se muestra la bodega que despacha, el estado del
+- **Despacho a bodega** (`dispatches` del contrato: uno por pedido, o uno
+  por bodega si Shopify repartió un pedido web): en el acordeón de un
+  pedido de Shopify se muestra, por despacho, la bodega que despacha, el estado del
   despacho (con su motivo en `note`), la guía y cada aviso por canal
   (API de Envía, correo, WhatsApp) con su estado, destinatario o error.
-  Pedidos sin despacho (`dispatch: null`) no muestran el bloque. Etiquetas
+  Pedidos sin despacho (`dispatches: []`) muestran el mensaje "Sin
+  despacho todavía" con los botones. Etiquetas
   en `orderFormat.js` (`dispatchStatus`, `notificationStatus`,
   `notificationChannelLabel`).
 - **Bodegas (Shopify)** (`fulfillment_orders` del contrato,
@@ -58,15 +60,16 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
   el precio de la línea del pedido del mismo SKU. Lo que no está en
   ninguna bodega va en "Sin bodega en Shopify"; el total del pedido, al
   final.
-  - **Despacho y botones**: el backend tiene **un** despacho por pedido
-    (bodega propia, todos los productos). Su estado, avisos y botones van
-    dentro de la tarjeta cuya bodega tiene el mismo nombre que la del
-    despacho; las otras dicen "Sin despacho para esta bodega" y no tienen
-    botones, para no avisar a una bodega con productos que no le tocan.
-    Sin despacho y con una sola bodega, los botones van en ella. Si la
-    bodega del despacho no coincide con ninguna, el despacho va en un
-    recuadro aparte con el aviso. Botones por bodega de verdad exigen
-    despachos por fulfillment order en el backend (no hecho).
+  - **Despacho y botones**: cada despacho va dentro de la tarjeta de la
+    bodega con el mismo `location_id`. Un pedido web que Shopify repartió
+    tiene un despacho por bodega, cada uno con sus botones (los botones
+    mandan su `id` como `dispatch_id`). Una tarjeta sin despacho dice "Sin
+    despacho para esta bodega" y no tiene botones, para no avisar a una
+    bodega con productos que no le tocan. Sin despachos y con una sola
+    bodega, los botones van en ella. Un despacho cuya bodega no coincide
+    con ninguna va en un recuadro aparte con el aviso. En un despacho de un
+    pedido repartido (`split`), "Notificar a proveedor" está deshabilitado
+    hasta la fase 2 del backend.
   - Sin `fulfillment_orders` (pedido sin datos de Shopify todavía o no
     creado), el acordeón es el de antes: recuadro del despacho y tabla de
     productos. En la columna
@@ -93,8 +96,10 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
   `api.uploadChannelLabel`: rótulo y relación en PDF, número opcional)
   (`api.downloadChannelLabel`, descarga con
   la sesión y el nombre del `Content-Disposition`).
-- **Columna "Aviso"**: estado del despacho (`dispatchStatus`), con la
-  bodega y los canales avisados en el `title`.
+- **Columna "Aviso"**: estado del despacho (`dispatchStatus`; con varios,
+  el que más atención pide, `worstDispatchStatus`), con cada bodega, su
+  estado y los canales avisados en el `title`. La columna "Guía" muestra
+  "N guías" si hay varias.
 - **Botones del despacho** (`components/DispatchActions.jsx`, en el
   acordeón de pedidos de Shopify): "Traer guía" (Mercado Libre, Falabella),
   "Generar guía" (tienda web y Madecentro: diálogo que cotiza, muestra

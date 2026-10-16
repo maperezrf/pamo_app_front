@@ -11,6 +11,7 @@ import MarketplaceLabel from "../components/MarketplaceLabel";
 import {
   customerName,
   dispatchStatus,
+  worstDispatchStatus,
   financialStatus,
   formatDateTime,
   formatMoney,
@@ -98,14 +99,25 @@ const orderColumns = [
     id: "dispatch",
     header: "Aviso",
     cell: ({ row }) => {
-      // ¿Se le avisó a la bodega? (`dispatch` del contrato).
-      const dispatch = row.original.dispatch;
-      if (!dispatch) return "—";
-      const status = dispatchStatus(dispatch.status);
-      const sent = dispatch.notifications.filter((n) => n.status === "enviado").map((n) => notificationChannelLabel(n.channel));
-      const title = [dispatch.location_name, sent.length ? `Avisado por: ${sent.join(", ")}` : "", dispatch.note]
-        .filter(Boolean)
-        .join(" · ");
+      // ¿Se le avisó a la bodega? (`dispatches` del contrato: uno por bodega).
+      const dispatches = row.original.dispatches ?? [];
+      if (dispatches.length === 0) return "—";
+      const status = dispatchStatus(worstDispatchStatus(dispatches));
+      const title = dispatches
+        .map((dispatch) => {
+          const sent = dispatch.notifications
+            .filter((n) => n.status === "enviado")
+            .map((n) => notificationChannelLabel(n.channel));
+          return [
+            dispatch.location_name,
+            dispatchStatus(dispatch.status)?.label,
+            sent.length ? `Avisado por: ${sent.join(", ")}` : "",
+            dispatch.note,
+          ]
+            .filter(Boolean)
+            .join(" · ");
+        })
+        .join("\n");
       return status ? <StatusChip label={status.label} tone={status.tone} title={title} /> : "—";
     },
   },

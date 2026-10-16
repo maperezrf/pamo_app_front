@@ -92,6 +92,13 @@ const NOTIFICATION_STATUS = {
 
 export const dispatchStatus = (value) => statusFrom(DISPATCH_STATUS, value);
 
+// Estado de un pedido con varios despachos (uno por bodega): el que más
+// atención pide. Mismo orden que `STATUS_PRIORITY` del backend.
+const DISPATCH_PRIORITY = ["error", "manual", "esperando_guia", "listo", "notificado", "cancelado"];
+export function worstDispatchStatus(dispatches) {
+  return DISPATCH_PRIORITY.find((status) => dispatches.some((d) => d.status === status)) ?? dispatches[0]?.status;
+}
+
 // Bodega desde donde sale el pedido según Shopify (`fulfillment_orders` del
 // contrato; `FulfillmentOrderStatus` de Shopify) → [etiqueta, tono].
 const FULFILLMENT_ORDER_STATUS = {
@@ -124,11 +131,19 @@ const CHANNEL_LABEL_STATUS = {
 
 export const channelLabelStatus = (value) => statusFrom(CHANNEL_LABEL_STATUS, value);
 
-// Guía de un pedido para la columna "Guía": la del despacho si ya la tiene
-// (canal o generada en Envía); si no, la del RPA (Sodimac). null = no aplica.
+// Guía de un pedido para la columna "Guía": la de sus despachos si ya la
+// tienen (canal o generada en Envía; una por bodega si el pedido sale de
+// varias); si no, la del RPA (Sodimac). null = no aplica.
 export function orderLabel(order) {
-  if (order.dispatch?.tracking_number) {
-    return { label: `Guía ${order.dispatch.tracking_number}`, tone: "success" };
+  const dispatches = order.dispatches ?? [];
+  const numbers = dispatches.map((d) => d.tracking_number).filter(Boolean);
+  if (numbers.length > 0) {
+    const missing = dispatches.length - numbers.length;
+    return {
+      label: numbers.length === 1 ? `Guía ${numbers[0]}` : `${numbers.length} guías`,
+      tone: missing ? "neutral" : "success",
+      title: [numbers.join(", "), missing ? `${missing} bodega(s) sin guía` : ""].filter(Boolean).join(" · "),
+    };
   }
   const channel = order.channel_label;
   if (!channel) return null;

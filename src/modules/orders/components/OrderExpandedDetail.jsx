@@ -65,11 +65,18 @@ export default function OrderExpandedDetail({ order, onChanged }) {
         <ShopifyWarehouses order={order} onChanged={onChanged} />
       ) : (
         <>
-          {isShopify && (
-            <Card>
-              <DispatchBlock order={order} onChanged={onChanged} />
-            </Card>
-          )}
+          {isShopify &&
+            ((order.dispatches ?? []).length > 0 ? (
+              order.dispatches.map((dispatch) => (
+                <Card key={dispatch.id}>
+                  <DispatchBlock order={order} dispatch={dispatch} onChanged={onChanged} />
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <DispatchBlock order={order} dispatch={null} onChanged={onChanged} />
+              </Card>
+            ))}
           <ProductTable
             items={order.items}
             currency={order.currency}
@@ -84,48 +91,57 @@ export default function OrderExpandedDetail({ order, onChanged }) {
 }
 
 // Pedido de Shopify agrupado por las bodegas desde donde sale según Shopify
-// (`fulfillment_orders`), cada una con sus productos. El despacho de este
-// sistema (`dispatch`, uno por pedido con todos los productos) y sus botones
-// van en la bodega que coincide con la suya: así nunca se avisa a una bodega
-// con productos que no le tocan. Sin despacho y con una sola bodega, los
-// botones van en ella; si no hay dónde ponerlo, va en un recuadro aparte.
+// (`fulfillment_orders`), cada una con sus productos. Cada despacho de este
+// sistema (`dispatches`: uno por pedido, o uno por bodega si Shopify repartió
+// un pedido web) y sus botones van en la bodega que coincide con la suya: así
+// nunca se avisa a una bodega con productos que no le tocan. Sin despachos y
+// con una sola bodega, los botones van en ella; un despacho sin bodega de
+// Shopify que coincida va en un recuadro aparte.
 function ShopifyWarehouses({ order, onChanged }) {
   const fulfillmentOrders = order.fulfillment_orders;
-  const dispatchName = order.dispatch?.location_name || "";
-  const hostIndex = order.dispatch
-    ? fulfillmentOrders.findIndex((fo) => dispatchName && fo.location_name === dispatchName)
-    : fulfillmentOrders.length === 1
-      ? 0
-      : -1;
+  const dispatches = order.dispatches ?? [];
+  const cardOf = (dispatch) =>
+    fulfillmentOrders.findIndex((fo) => dispatch.location_id && fo.location_id === dispatch.location_id);
+  const hosted = new Set(dispatches.map(cardOf).filter((index) => index !== -1));
+  const unhosted = dispatches.filter((dispatch) => cardOf(dispatch) === -1);
+  const emptyHost = dispatches.length === 0 && fulfillmentOrders.length === 1 ? 0 : -1;
   const leftovers = itemsOutsideWarehouses(order.items, fulfillmentOrders);
 
   return (
     <>
-      {hostIndex === -1 && (
+      {dispatches.length === 0 && emptyHost === -1 && (
         <Card>
-          {order.dispatch && (
-            <Alert severity="warning" sx={{ mb: 1.25 }}>
-              {dispatchName
-                ? `Nuestra bodega (${dispatchName}) no coincide con ninguna de las de Shopify.`
-                : "El despacho no tiene bodega todavía."}
-            </Alert>
-          )}
-          <DispatchBlock order={order} onChanged={onChanged} />
+          <DispatchBlock order={order} dispatch={null} onChanged={onChanged} />
         </Card>
       )}
-      {fulfillmentOrders.map((fo, index) => (
-        <WarehouseCard key={fo.id} fo={fo} order={order}>
-          {index === hostIndex ? (
-            <DispatchBlock order={order} onChanged={onChanged} />
-          ) : (
-            hostIndex !== -1 && (
-              <Typography variant="body2" color="textSecondary">
-                Sin despacho para esta bodega.
-              </Typography>
-            )
-          )}
-        </WarehouseCard>
+      {unhosted.map((dispatch) => (
+        <Card key={dispatch.id}>
+          <Alert severity="warning" sx={{ mb: 1.25 }}>
+            {dispatch.location_name
+              ? `Nuestra bodega (${dispatch.location_name}) no coincide con ninguna de las de Shopify.`
+              : "El despacho no tiene bodega todavía."}
+          </Alert>
+          <DispatchBlock order={order} dispatch={dispatch} onChanged={onChanged} />
+        </Card>
       ))}
+      {fulfillmentOrders.map((fo, index) => {
+        const dispatch = dispatches.find((d) => cardOf(d) === index);
+        return (
+          <WarehouseCard key={fo.id} fo={fo} order={order}>
+            {dispatch ? (
+              <DispatchBlock order={order} dispatch={dispatch} onChanged={onChanged} />
+            ) : index === emptyHost ? (
+              <DispatchBlock order={order} dispatch={null} onChanged={onChanged} />
+            ) : (
+              hosted.size > 0 && (
+                <Typography variant="body2" color="textSecondary">
+                  Sin despacho para esta bodega.
+                </Typography>
+              )
+            )}
+          </WarehouseCard>
+        );
+      })}
       {leftovers.length > 0 && (
         <Card>
           <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
@@ -174,18 +190,18 @@ function WarehouseCard({ fo, order, children }) {
   );
 }
 
-// Estado del despacho con sus botones; sin despacho, el mensaje de siempre.
-function DispatchBlock({ order, onChanged }) {
+// Estado de un despacho con sus botones; sin despacho, el mensaje de siempre.
+function DispatchBlock({ order, dispatch, onChanged }) {
   return (
     <>
-      {order.dispatch ? (
-        <DispatchSummary dispatch={order.dispatch} shopifyOrderId={order.shopify_order_id} />
+      {dispatch ? (
+        <DispatchSummary dispatch={dispatch} shopifyOrderId={order.shopify_order_id} />
       ) : (
         <Typography variant="body2" color="textSecondary">
           Sin despacho todavía: "Notificar a proveedor" asigna la bodega y avisa.
         </Typography>
       )}
-      <DispatchActions order={order} onChanged={onChanged} />
+      <DispatchActions order={order} dispatch={dispatch} onChanged={onChanged} />
     </>
   );
 }
@@ -302,7 +318,7 @@ function DispatchSummary({ dispatch, shopifyOrderId }) {
     setDownloading(true);
     setDownloadError("");
     try {
-      const { ok } = await api.downloadDispatchLabel(shopifyOrderId);
+      const { ok } = await api.downloadDispatchLabel(shopifyOrderId, dispatch.id);
       if (!ok) setDownloadError("No se pudo descargar la guía.");
     } catch {
       setDownloadError("No se pudo conectar con el servidor.");
