@@ -12,6 +12,7 @@ src/
 │   └── providers/        Providers globales (AppThemeProvider).
 ├── core/
 │   ├── api/               Cliente HTTP único y wrapper de endpoints.
+│   ├── excel/             Leer y descargar Excel (SheetJS bajo demanda).
 │   └── format/            Fechas, importes y enlaces a Shopify comunes.
 ├── modules/
 │   ├── access/            Pantallas de login y no autorizado.
@@ -20,7 +21,8 @@ src/
 │   │   ├── pages/
 │   │   ├── components/     Componentes propios del área.
 │   │   └── orderFormat.js  Etiquetas y formato del área.
-│   └── invoicing/          Listado y detalle de facturas en Siigo.
+│   ├── invoicing/          Listado y detalle de facturas en Siigo.
+│   └── products/           Catálogo, carga de SKU y kits.
 ├── components/
 │   ├── brand/              BrandMark.
 │   ├── data-display/       StatusChip, MarketplaceLabel.
@@ -42,7 +44,10 @@ src/
   componentes no importan sus archivos directamente, solo a través del tema
   distribuido por `AppThemeProvider`.
 - `src/core/`: infraestructura técnica transversal: `core/api/`
-  (`httpClient.js` y `api.js`) y `core/format/` (formato de fechas e
+  (`httpClient.js` y `api.js`), `core/excel/` (leer la primera hoja de un
+  Excel como filas y descargar filas como `.xlsx`; el backend no maneja
+  archivos; SheetJS se instala desde `cdn.sheetjs.com`, no del registro de
+  npm, y se importa de forma dinámica) y `core/format/` (formato de fechas e
   importes y enlaces al admin de Shopify que usan varias áreas; lo propio de
   un área sigue en su archivo de formato). No depende de `modules/` ni de páginas.
 - `src/modules/<área>/pages/`: pantallas agrupadas por área funcional.

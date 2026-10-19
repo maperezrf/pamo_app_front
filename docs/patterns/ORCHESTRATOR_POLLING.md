@@ -4,8 +4,10 @@ Fuente de verdad del contrato: `backend/docs/patterns/orchestrator-usage-guide.m
 Este documento traduce ese contrato a cómo debe consumirse desde React; si el
 backend cambia una ruta, estado o permiso, actualizar ambos documentos.
 
-Ningún módulo del frontend consume todavía el orquestador. Este patrón aplica
-cuando una pantalla lance un proceso de larga duración (por ejemplo, un
+El área de productos lo consume a través de un endpoint dedicado
+(`SkuUploadDialog`: lanza con `POST /api/products/sku-uploads/` y hace
+polling del detalle de la carga, que trae el estado del orquestador). Este
+patrón aplica cuando una pantalla lance un proceso de larga duración (por ejemplo, un
 reporte o una importación) y necesite mostrar su progreso.
 
 ## Flujo

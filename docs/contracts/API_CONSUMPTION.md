@@ -10,6 +10,10 @@ logout, menú y verificación administrativa. Pedidos: `api.listOrders(params)`
 → `GET /api/orders/` (ver [`../apps/orders.md`](../apps/orders.md)).
 Facturación: `api.listInvoices(params)` → `GET /api/invoicing/` (ver
 [`../apps/invoicing.md`](../apps/invoicing.md)).
+Productos: `api.listProducts`, `api.createSkuUpload`, `api.getSkuUpload`,
+`api.exportKits`, `api.importKits`, `api.deleteMarketplaceSku` y
+`api.deleteKit` → `/api/products/` (ver
+[`../apps/products.md`](../apps/products.md)).
 
 No introducir un endpoint por inferencia. Todo cambio de método, ruta,
 permisos, body, respuesta o error se actualiza en backend y frontend dentro

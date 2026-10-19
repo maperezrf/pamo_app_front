@@ -16,10 +16,10 @@ detalle interno (ver `AuthHero`, privado de `AuthLayout/`).
 | --- | --- | --- | --- |
 | `Sidebar` | navigation | `src/components/navigation/Sidebar/` | `AppShell` |
 | `Topbar` | navigation | `src/components/navigation/Topbar/` | `AppShell` |
-| `DataTable` | tables | `src/components/tables/DataTable/` | `OrdersPage`, `InvoicesPage` |
+| `DataTable` | tables | `src/components/tables/DataTable/` | `OrdersPage`, `InvoicesPage`, `ProductsPage` |
 | `BrandMark` | brand | `src/components/brand/BrandMark/` | `Sidebar`, `AuthLayout` |
-| `StatusChip` | data-display | `src/components/data-display/StatusChip/` | `OrdersPage`, `InvoicesPage` |
-| `MarketplaceLabel` | data-display | `src/components/data-display/MarketplaceLabel/` | `OrdersPage`, `OrderFilters`, `InvoicesPage`, `InvoiceFilters` |
+| `StatusChip` | data-display | `src/components/data-display/StatusChip/` | `OrdersPage`, `InvoicesPage`, `ProductsPage`, `SkuUploadDialog` |
+| `MarketplaceLabel` | data-display | `src/components/data-display/MarketplaceLabel/` | `OrdersPage`, `OrderFilters`, `InvoicesPage`, `InvoiceFilters`, `ProductExpandedDetail`, `SkuUploadDialog` |
 
 ## `Sidebar`
 

@@ -32,6 +32,8 @@ aplica, se incorpora a la documentación versionada.
 | Shell compartido | `src/app/layouts/`, `src/components/navigation/` | Layout autenticado (`AppShell`: sidebar, topbar, footer) y de acceso (`AuthLayout`). | [`architecture/OVERVIEW.md`](architecture/OVERVIEW.md) |
 | Pedidos | `src/modules/orders/` | Listado de pedidos con filtros, paginación de servidor y detalle. | [`apps/orders.md`](apps/orders.md) |
 | Facturación | `src/modules/invoicing/` | Listado de facturas en Siigo con su estado, motivo del fallo, SKU y enlaces a Shopify y a Siigo. | [`apps/invoicing.md`](apps/invoicing.md) |
+| Productos | `src/modules/products/` | Catálogo: listado, carga de SKU por marketplace (Excel o una fila) y kits. | [`apps/products.md`](apps/products.md) |
+| Excel | `src/core/excel/` | Leer y descargar `.xlsx` en el navegador (SheetJS, cargado bajo demanda). | [`apps/products.md`](apps/products.md) |
 | Formato común | `src/core/format/` | Fechas, importes y enlaces al admin de Shopify, compartidos entre áreas. | [`architecture/OVERVIEW.md`](architecture/OVERVIEW.md) |
 | Tabla compartida | `src/components/tables/DataTable/` | Tabla en modo cliente o con paginación de servidor. | [`patterns/DATA_TABLE.md`](patterns/DATA_TABLE.md) |
 | Chip de estado | `src/components/data-display/StatusChip/` | Etiqueta de estado con tonos del tema. | [`architecture/COMPONENT_REGISTRY.md`](architecture/COMPONENT_REGISTRY.md) |
@@ -53,6 +55,7 @@ aplica, se incorpora a la documentación versionada.
 | [App de acceso](apps/access.md) | Pantallas y flujos de autenticación. |
 | [App de pedidos](apps/orders.md) | Listado, filtros y detalle de pedidos. |
 | [App de facturación](apps/invoicing.md) | Listado y detalle de facturas en Siigo. |
+| [App de productos](apps/products.md) | Catálogo, equivalencias de SKU y kits. |
 
 ## Regla de mantenimiento
 

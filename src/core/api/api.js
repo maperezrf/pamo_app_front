@@ -22,6 +22,21 @@ export const api = {
   pingAdmin: () => request("/api/auth/ping-admin/"),
   listOrders: (params) => request("/api/orders/", { params }),
   listInvoices: (params) => request("/api/invoicing/", { params }),
+  // Catálogo de productos (rol Admin). Las cargas reciben filas leídas del
+  // Excel en el navegador; el backend no maneja archivos.
+  listProducts: (params) => request("/api/products/", { params }),
+  // Carga de SKU de un marketplace en segundo plano: responde 202 {id,
+  // execution_id}; el detalle se consulta por polling hasta un estado final.
+  createSkuUpload: (marketplace, rows) =>
+    request("/api/products/sku-uploads/", { method: "POST", body: { marketplace, rows } }),
+  getSkuUpload: (id) => request(`/api/products/sku-uploads/${id}/`),
+  // Kits: GET {columns, rows}; POST reemplaza completo cada kit que viene.
+  exportKits: () => request("/api/products/kits/"),
+  importKits: (rows) => request("/api/products/kits/", { method: "POST", body: { rows } }),
+  // Borrados: 204, 404 si no existe; el kit responde 400 si no es kit. Borrar
+  // un kit borra también sus componentes y equivalencias.
+  deleteMarketplaceSku: (id) => request(`/api/products/marketplace-skus/${id}/`, { method: "DELETE" }),
+  deleteKit: (productId) => request(`/api/products/kits/${productId}/`, { method: "DELETE" }),
   // Despacho de UN pedido (botones del panel). `dispatchId`: el despacho de
   // la bodega (obligatorio si el pedido sale de varias). Responden
   // {dispatch, dispatches} o {detail}.
