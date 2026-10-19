@@ -7,7 +7,7 @@ import StatusChip from "../../../components/data-display/StatusChip";
 import OrderFilters from "../components/OrderFilters";
 import OrderExpandedDetail from "../components/OrderExpandedDetail";
 import SodimacRpaPanel from "../components/SodimacRpaPanel";
-import MarketplaceLabel from "../components/MarketplaceLabel";
+import MarketplaceLabel from "../../../components/data-display/MarketplaceLabel";
 import {
   customerName,
   dispatchStatus,

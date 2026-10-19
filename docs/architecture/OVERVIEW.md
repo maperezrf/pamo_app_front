@@ -11,17 +11,19 @@ src/
 │   ├── layouts/         Marcos visuales generales (AppShell, AuthLayout).
 │   └── providers/        Providers globales (AppThemeProvider).
 ├── core/
-│   └── api/               Cliente HTTP único y wrapper de endpoints.
+│   ├── api/               Cliente HTTP único y wrapper de endpoints.
+│   └── format/            Fechas, importes y enlaces a Shopify comunes.
 ├── modules/
 │   ├── access/            Pantallas de login y no autorizado.
 │   ├── home/               Pantalla principal.
-│   └── orders/             Listado y detalle de pedidos.
-│       ├── pages/
-│       ├── components/     Componentes propios del área.
-│       └── orderFormat.js  Etiquetas y formato del área.
+│   ├── orders/             Listado y detalle de pedidos.
+│   │   ├── pages/
+│   │   ├── components/     Componentes propios del área.
+│   │   └── orderFormat.js  Etiquetas y formato del área.
+│   └── invoicing/          Listado y detalle de facturas en Siigo.
 ├── components/
 │   ├── brand/              BrandMark.
-│   ├── data-display/       StatusChip.
+│   ├── data-display/       StatusChip, MarketplaceLabel.
 │   ├── navigation/         Sidebar, Topbar.
 │   └── tables/              DataTable.
 ├── theme/                   Paleta, tipografía, forma y sombras (MUI).
@@ -39,8 +41,10 @@ src/
 - `src/theme/`: identidad visual centralizada consumida por MUI. Los
   componentes no importan sus archivos directamente, solo a través del tema
   distribuido por `AppThemeProvider`.
-- `src/core/`: infraestructura técnica transversal (hoy solo `core/api/`,
-  con `httpClient.js` y `api.js`). No depende de `modules/` ni de páginas.
+- `src/core/`: infraestructura técnica transversal: `core/api/`
+  (`httpClient.js` y `api.js`) y `core/format/` (formato de fechas e
+  importes y enlaces al admin de Shopify que usan varias áreas; lo propio de
+  un área sigue en su archivo de formato). No depende de `modules/` ni de páginas.
 - `src/modules/<área>/pages/`: pantallas agrupadas por área funcional.
   Página nueva → primero decidir a qué área pertenece (`access`, `home`, o
   una nueva) antes de agregarla como archivo suelto.

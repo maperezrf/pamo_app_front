@@ -1,5 +1,5 @@
 import { Box } from "@mui/material";
-import { marketplaceLabel, marketplaceLogo } from "../orderFormat";
+import { marketplaceLabel, marketplaceLogo } from "./marketplaces";
 
 // Logo del canal + nombre. Sin logo conocido, solo el nombre.
 export default function MarketplaceLabel({ value, label, size = 18 }) {

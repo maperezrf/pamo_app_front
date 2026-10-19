@@ -21,6 +21,7 @@ export const api = {
   menu: () => request("/api/auth/menu/"),
   pingAdmin: () => request("/api/auth/ping-admin/"),
   listOrders: (params) => request("/api/orders/", { params }),
+  listInvoices: (params) => request("/api/invoicing/", { params }),
   // Despacho de UN pedido (botones del panel). `dispatchId`: el despacho de
   // la bodega (obligatorio si el pedido sale de varias). Responden
   // {dispatch, dispatches} o {detail}.
@@ -39,6 +40,23 @@ export const api = {
     request(`/api/orders/${shopifyOrderId}/dispatch/label/`, {
       method: "POST",
       body: { dispatch_id: dispatchId, carrier, service, package: pkg },
+    }),
+  // "Cargar guía": sube una guía hecha fuera del sistema (PDF, número y
+  // transportadora). Responde {dispatch, dispatches} o {detail}.
+  uploadDispatchLabel: (shopifyOrderId, dispatchId, { label, trackingNumber, carrier }) => {
+    const form = new FormData();
+    form.append("label", label);
+    form.append("tracking_number", trackingNumber);
+    form.append("carrier", carrier);
+    if (dispatchId) form.append("dispatch_id", dispatchId);
+    return request(`/api/orders/${shopifyOrderId}/dispatch/label/upload/`, { method: "POST", body: form });
+  },
+  // "Liberar guía": quita la guía generada en Envía o cargada a mano para generar o cargar otra
+  // (no la cancela en Envía). Responde {dispatch, dispatches} o {detail}.
+  releaseDispatchLabel: (shopifyOrderId, dispatchId) =>
+    request(`/api/orders/${shopifyOrderId}/dispatch/label/release/`, {
+      method: "POST",
+      body: { dispatch_id: dispatchId },
     }),
   // Recuadro del RPA de guías de Sodimac: estado (con el enlace del visor),
   // "Continuar" tras el CAPTCHA y "Detener". Responden el estado o {detail}.

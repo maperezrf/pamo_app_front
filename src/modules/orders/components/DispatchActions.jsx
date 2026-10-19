@@ -13,9 +13,11 @@ import {
   RadioGroup,
   TextField,
   Typography,
+  Autocomplete,
 } from "@mui/material";
 import { api } from "../../../core/api/api";
 import { formatMoney } from "../orderFormat";
+import FileField from "./FileField";
 
 // Canales que traen su propia guía: el botón la trae, no la genera. (La de
 // Sodimac la genera el RPA y el aviso la toma sola: no lleva botón.)
@@ -31,6 +33,9 @@ const PACKAGE_FIELDS = [
   { key: "height", label: "Alto (cm)" },
 ];
 const DEFAULT_PACKAGE = { weight: "1", length: "10", width: "10", height: "10" };
+// Transportadoras sugeridas al cargar una guía (va a Shopify como empresa de
+// envío); se puede escribir otra.
+const CARRIERS = ["TCC", "Servientrega", "Coordinadora", "Inter Rapidísimo", "Envía", "Deprisa"];
 const toNumber = (value) => Number(String(value).trim().replace(",", "."));
 
 // Botones de UN despacho de un pedido de Shopify (`dispatch`, null si aún
@@ -42,8 +47,10 @@ export default function DispatchActions({ order, dispatch, onChanged }) {
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState(null);
   const [quoteOpen, setQuoteOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const dispatchId = dispatch?.id;
-  const labelGenerated = dispatch?.label_source === "envia";
+  // Guía generada en Envía o cargada a mano: guardada en el despacho.
+  const labelGenerated = ["envia", "manual"].includes(dispatch?.label_source);
   // Aviso por bodega de un pedido repartido: fase 2 (todavía no disponible).
   const splitNotify = Boolean(dispatch?.split);
   // La bodega genera la guía de los pedidos de la tienda web (parámetro de la bodega).
@@ -86,6 +93,24 @@ export default function DispatchActions({ order, dispatch, onChanged }) {
     run("label", () => api.fetchDispatchLabel(order.shopify_order_id, dispatchId), "Guía traída del canal.");
   };
 
+  // La guía se puede liberar mientras no se haya avisado a la bodega ni
+  // cumplido en Shopify (el backend lo vuelve a validar).
+  const canRelease = labelGenerated && !dispatch?.notifications?.length && !dispatch?.shopify_fulfilled_at;
+  const releaseLabel = () => {
+    const label = `${dispatch.tracking_number} (${[dispatch.label_carrier, dispatch.label_service].filter(Boolean).join(" ")})`;
+    const cancel =
+      dispatch.label_source === "envia"
+        ? "NO se cancela en Envía: cancélala allá para que no se cobre."
+        : "Si no se va a usar, anúlala donde se hizo.";
+    if (!window.confirm(`Se quitará la guía ${label} del despacho para generar o cargar otra. ${cancel} ¿Continuar?`))
+      return;
+    run(
+      "release",
+      () => api.releaseDispatchLabel(order.shopify_order_id, dispatchId),
+      `Guía ${dispatch.tracking_number} liberada.${dispatch.label_source === "envia" ? " Recuerda cancelarla en Envía." : ""}`,
+    );
+  };
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1.25 }}>
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }} onClick={(e) => e.stopPropagation()}>
@@ -111,6 +136,28 @@ export default function DispatchActions({ order, dispatch, onChanged }) {
             Generar guía
           </Button>
         )}
+        {GENERATED_LABELS.includes(order.marketplace) && (
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={!!busy || labelGenerated || warehouseLabel}
+            title={
+              warehouseLabel
+                ? `${dispatch.location_name} crea su propia guía`
+                : labelGenerated
+                  ? "Ya tiene una guía: libérala primero"
+                  : "Subir una guía hecha fuera del sistema"
+            }
+            onClick={() => setUploadOpen(true)}
+          >
+            Cargar guía
+          </Button>
+        )}
+        {canRelease && (
+          <Button size="small" variant="outlined" color="warning" disabled={!!busy} onClick={releaseLabel}>
+            {busy === "release" ? <CircularProgress size={16} /> : "Liberar guía"}
+          </Button>
+        )}
         <Button
           size="small"
           variant="contained"
@@ -126,6 +173,18 @@ export default function DispatchActions({ order, dispatch, onChanged }) {
           {message.text}
         </Alert>
       )}
+      {uploadOpen && (
+        <UploadDispatchLabelDialog
+          order={order}
+          dispatch={dispatch}
+          onClose={() => setUploadOpen(false)}
+          onUploaded={() => {
+            setUploadOpen(false);
+            setMessage({ severity: "success", text: "Guía cargada." });
+            onChanged?.();
+          }}
+        />
+      )}
       {quoteOpen && (
         <GenerateLabelDialog
           order={order}
@@ -139,6 +198,69 @@ export default function DispatchActions({ order, dispatch, onChanged }) {
         />
       )}
     </Box>
+  );
+}
+
+// Guía hecha fuera del sistema (panel de Envía, transportadora): PDF, número
+// y transportadora, que es la que queda en Shopify al cumplir.
+function UploadDispatchLabelDialog({ order, dispatch, onClose, onUploaded }) {
+  const [label, setLabel] = useState(null);
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [carrier, setCarrier] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      const { ok, data } = await api.uploadDispatchLabel(order.shopify_order_id, dispatch?.id, {
+        label,
+        trackingNumber: trackingNumber.trim(),
+        carrier: carrier.trim(),
+      });
+      if (ok) onUploaded();
+      else setError(data?.detail || "No se pudo cargar la guía.");
+    } catch {
+      setError("No se pudo conectar con el servidor.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onClose={saving ? undefined : onClose} fullWidth maxWidth="xs" onClick={(e) => e.stopPropagation()}>
+      <DialogTitle>Cargar guía · pedido {order.shopify_order_name}</DialogTitle>
+      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "8px !important" }}>
+        <FileField label="Guía (PDF)" file={label} onChange={setLabel} />
+        <TextField
+          size="small"
+          label="Número de guía"
+          value={trackingNumber}
+          onChange={(e) => setTrackingNumber(e.target.value)}
+        />
+        <Autocomplete
+          freeSolo
+          options={CARRIERS}
+          inputValue={carrier}
+          onInputChange={(_, value) => setCarrier(value)}
+          renderInput={(params) => <TextField {...params} size="small" label="Transportadora" />}
+        />
+        {error && <Alert severity="error">{error}</Alert>}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={saving}>
+          Cancelar
+        </Button>
+        <Button
+          variant="contained"
+          onClick={submit}
+          disabled={saving || !label || !trackingNumber.trim() || !carrier.trim()}
+        >
+          {saving ? "Cargando…" : "Cargar"}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 

@@ -16,9 +16,10 @@ detalle interno (ver `AuthHero`, privado de `AuthLayout/`).
 | --- | --- | --- | --- |
 | `Sidebar` | navigation | `src/components/navigation/Sidebar/` | `AppShell` |
 | `Topbar` | navigation | `src/components/navigation/Topbar/` | `AppShell` |
-| `DataTable` | tables | `src/components/tables/DataTable/` | `OrdersPage` |
+| `DataTable` | tables | `src/components/tables/DataTable/` | `OrdersPage`, `InvoicesPage` |
 | `BrandMark` | brand | `src/components/brand/BrandMark/` | `Sidebar`, `AuthLayout` |
-| `StatusChip` | data-display | `src/components/data-display/StatusChip/` | `OrdersPage` |
+| `StatusChip` | data-display | `src/components/data-display/StatusChip/` | `OrdersPage`, `InvoicesPage` |
+| `MarketplaceLabel` | data-display | `src/components/data-display/MarketplaceLabel/` | `OrdersPage`, `OrderFilters`, `InvoicesPage`, `InvoiceFilters` |
 
 ## `Sidebar`
 
@@ -75,6 +76,18 @@ detalle interno (ver `AuthHero`, privado de `AuthLayout/`).
   `Button` de MUI. Un tono nuevo se agrega solo si la paleta ya tiene el
   color.
 - **Dependencias**: MUI `Chip`.
+
+## `MarketplaceLabel`
+
+- **Responsabilidad**: logo del canal (`src/assets/marketplaces/<valor>.png`)
+  más su nombre; sin logo conocido, solo el nombre. Los valores son los del
+  contrato (`falabella`, `mercadolibre`, `madecentro`, `sodimac`, `shopify`).
+- **Props**: `value` (canal), `label` (opcional, reemplaza el nombre), `size`
+  (px del logo, por defecto 18).
+- **Exporta además**: `marketplaceLabel(value)` y `marketplaceLogo(value)`
+  (`marketplaces.js`), para textos o filtros. Un canal nuevo agrega su PNG y
+  su entrada en `marketplaces.js`.
+- **Dependencias**: MUI `Box`.
 
 ## Mantenimiento
 

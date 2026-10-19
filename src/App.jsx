@@ -7,6 +7,7 @@ import LoginPage from "./modules/access/pages/LoginPage";
 import UnauthorizedPage from "./modules/access/pages/UnauthorizedPage";
 import HomePage from "./modules/home/pages/HomePage";
 import OrdersPage from "./modules/orders/pages/OrdersPage";
+import InvoicesPage from "./modules/invoicing/pages/InvoicesPage";
 
 // authed: null = verificando sesión, false = sin sesión, true = con sesión
 export default function App() {
@@ -88,6 +89,7 @@ export default function App() {
       >
         <Route path="/" element={<HomePage user={user} />} />
         <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/invoicing" element={<InvoicesPage />} />
       </Route>
     </Routes>
   );

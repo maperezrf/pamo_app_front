@@ -2,11 +2,10 @@
 // `GET /api/orders/` (backend/docs/contracts/API.md); un valor desconocido se
 // muestra tal cual en vez de ocultarse.
 
-import falabellaLogo from "../../assets/marketplaces/falabella.png";
-import madecentroLogo from "../../assets/marketplaces/madecentro.png";
-import mercadolibreLogo from "../../assets/marketplaces/mercadolibre.png";
-import shopifyLogo from "../../assets/marketplaces/shopify.png";
-import sodimacLogo from "../../assets/marketplaces/sodimac.png";
+// Nombre/ícono de canal y formato común viven en piezas compartidas; se
+// re-exportan para que el área los siga tomando de acá.
+export { marketplaceLabel, marketplaceLogo } from "../../components/data-display/MarketplaceLabel";
+export { formatDateTime, formatMoney, shopifyOrderUrl, shopifyProductSearchUrl } from "../../core/format";
 
 export const MARKETPLACE_OPTIONS = [
   { value: "falabella", label: "Falabella" },
@@ -15,9 +14,6 @@ export const MARKETPLACE_OPTIONS = [
   { value: "sodimac", label: "Sodimac" },
   { value: "shopify", label: "Shopify (sin marketplace)" },
 ];
-
-const MARKETPLACE_LABELS = Object.fromEntries(MARKETPLACE_OPTIONS.map((o) => [o.value, o.label]));
-MARKETPLACE_LABELS.shopify = "Shopify";
 
 // Estados de Shopify: [etiqueta, tono de StatusChip].
 const FINANCIAL_STATUS = {
@@ -44,19 +40,6 @@ const NOT_CREATED_STATUS = {
   error_creando_cliente: "Error al crear cliente",
   error_creando_orden: "Error al crear orden",
 };
-
-// Ícono del sitio de cada canal (Sodimac Colombia opera como Homecenter).
-const MARKETPLACE_LOGOS = {
-  falabella: falabellaLogo,
-  mercadolibre: mercadolibreLogo,
-  madecentro: madecentroLogo,
-  sodimac: sodimacLogo,
-  shopify: shopifyLogo,
-};
-
-export const marketplaceLogo = (value) => MARKETPLACE_LOGOS[value] ?? null;
-
-export const marketplaceLabel = (value) => MARKETPLACE_LABELS[value] ?? value ?? "—";
 
 export const financialStatus = (value) => statusFrom(FINANCIAL_STATUS, value);
 
@@ -165,41 +148,7 @@ export function warehouse(fulfillment) {
   return null;
 }
 
-// Admin de Shopify de la tienda (`VITE_SHOPIFY_ADMIN_URL`, ej.
-// https://admin.shopify.com/store/<tienda>). Sin configurar → sin enlaces.
-const SHOPIFY_ADMIN_URL = (import.meta.env?.VITE_SHOPIFY_ADMIN_URL ?? "").replace(/\/+$/, "");
-
-export function shopifyOrderUrl(shopifyOrderId) {
-  return SHOPIFY_ADMIN_URL && shopifyOrderId ? `${SHOPIFY_ADMIN_URL}/orders/${shopifyOrderId}` : null;
-}
-
-// Las líneas locales no guardan el id del producto: se abre la búsqueda de
-// productos del admin por SKU.
-export function shopifyProductSearchUrl(sku) {
-  return SHOPIFY_ADMIN_URL && sku ? `${SHOPIFY_ADMIN_URL}/products?query=${encodeURIComponent(sku)}` : null;
-}
-
 export function customerName(customer) {
   const name = [customer?.first_name, customer?.last_name].filter(Boolean).join(" ");
   return name || "—";
-}
-
-const dateTimeFormat = new Intl.DateTimeFormat("es-CO", {
-  timeZone: "America/Bogota",
-  dateStyle: "medium",
-  timeStyle: "short",
-});
-
-export function formatDateTime(iso) {
-  return iso ? dateTimeFormat.format(new Date(iso)) : "—";
-}
-
-// Importes llegan como string con 2 decimales; `""` = sin importe.
-export function formatMoney(amount, currency = "COP") {
-  if (amount === "" || amount == null) return "—";
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: currency || "COP",
-    maximumFractionDigits: 2,
-  }).format(Number(amount));
 }

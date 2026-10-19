@@ -11,8 +11,8 @@ lee su copia local de Shopify, nunca Shopify en vivo.
 | Página | `src/modules/orders/pages/OrdersPage.jsx` | Estado en la URL, carga, pestañas, columnas y errores. |
 | Filtros | `src/modules/orders/components/OrderFilters.jsx` | Búsqueda (con espera de 400 ms), canal y rango de fechas. |
 | Detalle | `src/modules/orders/components/OrderExpandedDetail.jsx` | Contenido del acordeón: contacto, bodega, error y productos. |
-| Canal | `src/modules/orders/components/MarketplaceLabel.jsx` | Logo + nombre del canal (tabla, detalle y filtro). |
-| Formato | `src/modules/orders/orderFormat.js` | Etiquetas y logos de canal, estados, fechas y dinero. |
+| Canal | `src/components/data-display/MarketplaceLabel/` (compartido) | Logo + nombre del canal (tabla, detalle y filtro). |
+| Formato | `src/modules/orders/orderFormat.js` | Etiquetas y estados del área. Re-exporta el nombre/logo de canal y el formato común de `src/core/format/` (fechas, dinero, enlaces a Shopify). |
 
 Ruta `/orders` (rutas y valores de la URL en inglés; los textos visibles en español). Su entrada de menú vive en `backend/accounts/menu_config.py`
 con los mismos roles del endpoint (`Admin`, `Operaciones`).
@@ -130,7 +130,7 @@ Logos de canal: íconos oficiales de cada sitio en
 `mercadolibre`, `madecentro`, `sodimac`, `shopify`). Sodimac usa el ícono
 de Homecenter, la marca con la que opera en Colombia. Se empaquetan con la
 app (no se cargan de sitios externos). Un canal nuevo agrega su PNG ahí y
-su entrada en `MARKETPLACE_LOGOS`; sin logo, se muestra solo el nombre.
+su entrada en `MarketplaceLabel/marketplaces.js`; sin logo, se muestra solo el nombre.
 
 Fechas en hora de Colombia; importes con `Intl.NumberFormat` `es-CO` en la
 moneda del pedido (`COP` cuando no viene).

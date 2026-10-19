@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Box, Button, MenuItem, TextField } from "@mui/material";
 import { MARKETPLACE_OPTIONS } from "../orderFormat";
-import MarketplaceLabel from "./MarketplaceLabel";
+import MarketplaceLabel from "../../../components/data-display/MarketplaceLabel";
 
 const SEARCH_DELAY_MS = 400;
 

@@ -8,6 +8,8 @@ repositorios si cambia.
 Las rutas de acceso actuales son CSRF, Google login, identidad de sesión,
 logout, menú y verificación administrativa. Pedidos: `api.listOrders(params)`
 → `GET /api/orders/` (ver [`../apps/orders.md`](../apps/orders.md)).
+Facturación: `api.listInvoices(params)` → `GET /api/invoicing/` (ver
+[`../apps/invoicing.md`](../apps/invoicing.md)).
 
 No introducir un endpoint por inferencia. Todo cambio de método, ruta,
 permisos, body, respuesta o error se actualiza en backend y frontend dentro

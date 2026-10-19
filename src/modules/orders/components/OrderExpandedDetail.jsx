@@ -17,6 +17,7 @@ import {
   Typography,
 } from "@mui/material";
 import { api } from "../../../core/api/api";
+import FileField from "./FileField";
 import StatusChip from "../../../components/data-display/StatusChip";
 import DispatchActions from "./DispatchActions";
 import {
@@ -338,10 +339,11 @@ function DispatchSummary({ dispatch, shopifyOrderId }) {
           <Typography variant="body2" color="textSecondary">
             Guía {dispatch.tracking_number}
             {dispatch.label_source === "envia" && ` · generada en Envía (${dispatch.label_carrier} ${dispatch.label_service})`}
+            {dispatch.label_source === "manual" && ` · cargada a mano (${dispatch.label_carrier})`}
             {dispatch.label_source === "canal" && " · del canal"}
           </Typography>
         )}
-        {dispatch.label_source === "envia" && (
+        {["envia", "manual"].includes(dispatch.label_source) && (
           <Button
             size="small"
             variant="outlined"
@@ -561,20 +563,6 @@ function UploadLabelDialog({ order, onClose, onUploaded }) {
         </Button>
       </DialogActions>
     </Dialog>
-  );
-}
-
-function FileField({ label, file, onChange }) {
-  return (
-    <Box>
-      <Typography variant="caption" color="textSecondary" component="div">
-        {label}
-      </Typography>
-      <Button size="small" variant="outlined" component="label">
-        {file ? file.name : "Elegir archivo"}
-        <input hidden type="file" accept="application/pdf" onChange={(e) => onChange(e.target.files?.[0] ?? null)} />
-      </Button>
-    </Box>
   );
 }
 
