@@ -68,8 +68,8 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
     bodega con productos que no le tocan. Sin despachos y con una sola
     bodega, los botones van en ella. Un despacho cuya bodega no coincide
     con ninguna va en un recuadro aparte con el aviso. En un despacho de un
-    pedido repartido (`split`), "Notificar a proveedor" está deshabilitado
-    hasta la fase 2 del backend.
+    pedido repartido (`split`), "Notificar a proveedor" avisa solo a esa
+    bodega con sus productos (desde 2026-10-21).
   - Sin `fulfillment_orders` (pedido sin datos de Shopify todavía o no
     creado), el acordeón es el de antes: recuadro del despacho y tabla de
     productos. En la columna

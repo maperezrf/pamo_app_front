@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
+  IconButton,
   Radio,
   RadioGroup,
   TextField,
@@ -25,18 +26,32 @@ const CHANNEL_LABELS = ["mercadolibre", "falabella"];
 // Sin guía del canal: se genera en Envía. Tienda web (y Addi, cotizaciones)
 // y Madecentro.
 const GENERATED_LABELS = ["shopify", "madecentro"];
-// Paquete de la guía en Envía (kg y cm); arranca en el por defecto del backend.
+// Cajas de la guía en Envía (kg y cm), todas en UNA guía; cada fila con su
+// cantidad de cajas iguales. Arranca en el paquete por defecto del backend.
 const PACKAGE_FIELDS = [
   { key: "weight", label: "Peso (kg)" },
   { key: "length", label: "Largo (cm)" },
   { key: "width", label: "Ancho (cm)" },
   { key: "height", label: "Alto (cm)" },
 ];
-const DEFAULT_PACKAGE = { weight: "1", length: "10", width: "10", height: "10" };
+const DEFAULT_PACKAGE = { weight: "1", length: "10", width: "10", height: "10", quantity: "1" };
+const MAX_PACKAGE_ROWS = 20;
+const MAX_PACKAGE_QUANTITY = 50;
 // Transportadoras sugeridas al cargar una guía (va a Shopify como empresa de
 // envío); se puede escribir otra.
 const CARRIERS = ["TCC", "Servientrega", "Coordinadora", "Inter Rapidísimo", "Envía", "Deprisa"];
 const toNumber = (value) => Number(String(value).trim().replace(",", "."));
+const validQuantity = (value) =>
+  /^\d{1,3}$/.test(String(value).trim()) && toNumber(value) >= 1 && toNumber(value) <= MAX_PACKAGE_QUANTITY;
+// Fila del formulario → la que se manda (y la que devuelve el backend).
+const toPackage = (row) => ({
+  ...Object.fromEntries(PACKAGE_FIELDS.map(({ key }) => [key, toNumber(row[key])])),
+  quantity: toNumber(row.quantity),
+});
+const PACKAGE_KEYS = [...PACKAGE_FIELDS.map(({ key }) => key), "quantity"];
+const samePackages = (rows, quoted) =>
+  rows.length === quoted.length &&
+  rows.every((row, index) => PACKAGE_KEYS.every((key) => toPackage(row)[key] === quoted[index][key]));
 
 // Botones de UN despacho de un pedido de Shopify (`dispatch`, null si aún
 // no existe): traer o generar la guía y avisar a la bodega. Un pedido que
@@ -51,8 +66,6 @@ export default function DispatchActions({ order, dispatch, onChanged }) {
   const dispatchId = dispatch?.id;
   // Guía generada en Envía o cargada a mano: guardada en el despacho.
   const labelGenerated = ["envia", "manual"].includes(dispatch?.label_source);
-  // Aviso por bodega de un pedido repartido: fase 2 (todavía no disponible).
-  const splitNotify = Boolean(dispatch?.split);
   // La bodega genera la guía de los pedidos de la tienda web (parámetro de la bodega).
   const warehouseLabel = order.marketplace === "shopify" && Boolean(dispatch?.location_creates_own_label);
 
@@ -76,7 +89,8 @@ export default function DispatchActions({ order, dispatch, onChanged }) {
 
   const notify = () => {
     const target = dispatch?.location_name || "la bodega asignada";
-    if (!window.confirm(`Se avisará a ${target} por sus canales configurados. ¿Continuar?`)) return;
+    const part = dispatch?.split ? " solo con sus productos (el pedido sale de varias bodegas)" : "";
+    if (!window.confirm(`Se avisará a ${target} por sus canales configurados${part}. ¿Continuar?`)) return;
     run(
       "notify",
       () => api.notifyDispatch(order.shopify_order_id, dispatchId),
@@ -161,8 +175,8 @@ export default function DispatchActions({ order, dispatch, onChanged }) {
         <Button
           size="small"
           variant="contained"
-          disabled={!!busy || splitNotify}
-          title={splitNotify ? "Pedido repartido en varias bodegas: el aviso por bodega aún no está disponible" : undefined}
+          disabled={!!busy}
+          title={dispatch?.split ? "Avisa solo a esta bodega, con sus productos" : undefined}
           onClick={notify}
         >
           {busy === "notify" ? <CircularProgress size={16} color="inherit" /> : "Notificar a proveedor"}
@@ -264,13 +278,14 @@ function UploadDispatchLabelDialog({ order, dispatch, onClose, onUploaded }) {
   );
 }
 
-// Paso 1: cotizar (no cobra) con el peso y las medidas del paquete. Paso 2:
-// generar la opción elegida (cobra) con el MISMO paquete cotizado: si se
-// cambia una medida, las opciones dejan de valer hasta cotizar de nuevo.
+// Paso 1: cotizar (no cobra) con las cajas: peso, medidas y cantidad por
+// fila ("+ Agregar paquete" suma una fila). Paso 2: generar la opción
+// elegida (cobra) con las MISMAS cajas cotizadas, en una sola guía: si se
+// cambia algo, las opciones dejan de valer hasta cotizar de nuevo.
 function GenerateLabelDialog({ order, dispatch, onClose, onGenerated }) {
   const dispatchId = dispatch?.id;
-  const [pkg, setPkg] = useState(DEFAULT_PACKAGE);
-  const [quoted, setQuoted] = useState(null); // paquete de la última cotización (del backend)
+  const [rows, setRows] = useState([DEFAULT_PACKAGE]);
+  const [quoted, setQuoted] = useState(null); // cajas de la última cotización (del backend)
   const [quoting, setQuoting] = useState(false);
   const [options, setOptions] = useState(null);
   const [route, setRoute] = useState(null);
@@ -278,8 +293,13 @@ function GenerateLabelDialog({ order, dispatch, onClose, onGenerated }) {
   const [error, setError] = useState("");
   const [generating, setGenerating] = useState(false);
 
-  const stale = !quoted || PACKAGE_FIELDS.some(({ key }) => toNumber(pkg[key]) !== quoted[key]);
-  const invalid = PACKAGE_FIELDS.some(({ key }) => !(toNumber(pkg[key]) > 0));
+  const stale = !quoted || !samePackages(rows, quoted);
+  const invalid = rows.some(
+    (row) => PACKAGE_FIELDS.some(({ key }) => !(toNumber(row[key]) > 0)) || !validQuantity(row.quantity),
+  );
+  const boxes = rows.reduce((total, row) => total + (validQuantity(row.quantity) ? toNumber(row.quantity) : 0), 0);
+  const setRow = (index, key, value) =>
+    setRows((current) => current.map((row, i) => (i === index ? { ...row, [key]: value } : row)));
 
   const runQuote = async (values, isIgnored = () => false) => {
     setQuoting(true);
@@ -291,7 +311,7 @@ function GenerateLabelDialog({ order, dispatch, onClose, onGenerated }) {
       if (ok) {
         setOptions(data.options || []);
         setRoute(data.route || null);
-        setQuoted(data.package || null);
+        setQuoted(data.packages || null);
       } else {
         setError(data?.detail || "No se pudo cotizar.");
       }
@@ -305,7 +325,7 @@ function GenerateLabelDialog({ order, dispatch, onClose, onGenerated }) {
   // Cotiza al abrir con el paquete por defecto (no cobra).
   useEffect(() => {
     let ignore = false;
-    runQuote(DEFAULT_PACKAGE, () => ignore);
+    runQuote([toPackage(DEFAULT_PACKAGE)], () => ignore);
     return () => {
       ignore = true;
     };
@@ -319,7 +339,7 @@ function GenerateLabelDialog({ order, dispatch, onClose, onGenerated }) {
     setGenerating(true);
     setError("");
     try {
-      const { ok, data } = await api.generateDispatchLabel(order.shopify_order_id, dispatchId, { ...option, pkg: quoted });
+      const { ok, data } = await api.generateDispatchLabel(order.shopify_order_id, dispatchId, { ...option, packages: quoted });
       if (ok) onGenerated();
       else setError(data?.detail || "No se pudo generar la guía.");
     } catch {
@@ -330,7 +350,7 @@ function GenerateLabelDialog({ order, dispatch, onClose, onGenerated }) {
   };
 
   return (
-    <Dialog open onClose={generating ? undefined : onClose} fullWidth maxWidth="xs" onClick={(e) => e.stopPropagation()}>
+    <Dialog open onClose={generating ? undefined : onClose} fullWidth maxWidth="sm" onClick={(e) => e.stopPropagation()}>
       <DialogTitle>
         Generar guía · pedido {order.shopify_order_name}
         {dispatch?.split && dispatch.location_name ? ` · ${dispatch.location_name}` : ""}
@@ -338,32 +358,73 @@ function GenerateLabelDialog({ order, dispatch, onClose, onGenerated }) {
       <DialogContent dividers>
         {error && <Alert severity="error" sx={{ mb: 2, wordBreak: "break-word" }}>{error}</Alert>}
         {route && <RouteSummary route={route} />}
-        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(4, 1fr)" }, gap: 1, mb: 1 }}>
-          {PACKAGE_FIELDS.map(({ key, label }) => (
+        {rows.map((row, index) => (
+          <Box
+            key={index}
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(4, 1fr) 0.8fr auto" },
+              gap: 1,
+              mb: 1,
+              alignItems: "center",
+            }}
+          >
+            {PACKAGE_FIELDS.map(({ key, label }) => (
+              <TextField
+                key={key}
+                size="small"
+                label={label}
+                value={row[key]}
+                disabled={generating}
+                error={!(toNumber(row[key]) > 0)}
+                onChange={(e) => setRow(index, key, e.target.value)}
+                slotProps={{ htmlInput: { inputMode: "decimal" } }}
+              />
+            ))}
             <TextField
-              key={key}
               size="small"
-              label={label}
-              value={pkg[key]}
+              label="Cantidad"
+              value={row.quantity}
               disabled={generating}
-              error={!(toNumber(pkg[key]) > 0)}
-              onChange={(e) => setPkg((current) => ({ ...current, [key]: e.target.value }))}
-              slotProps={{ htmlInput: { inputMode: "decimal" } }}
+              error={!validQuantity(row.quantity)}
+              onChange={(e) => setRow(index, "quantity", e.target.value)}
+              slotProps={{ htmlInput: { inputMode: "numeric" } }}
             />
-          ))}
-        </Box>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+            <IconButton
+              size="small"
+              aria-label="Quitar paquete"
+              title="Quitar paquete"
+              disabled={generating || rows.length === 1}
+              onClick={() => setRows((current) => current.filter((_, i) => i !== index))}
+            >
+              ×
+            </IconButton>
+          </Box>
+        ))}
+        <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1, mb: 1.5 }}>
+          <Button
+            size="small"
+            disabled={generating || rows.length >= MAX_PACKAGE_ROWS}
+            onClick={() => setRows((current) => [...current, DEFAULT_PACKAGE])}
+          >
+            + Agregar paquete
+          </Button>
           <Button
             size="small"
             variant={stale && quoted ? "contained" : "outlined"}
             disabled={quoting || generating || invalid || !stale}
-            onClick={() => runQuote(Object.fromEntries(PACKAGE_FIELDS.map(({ key }) => [key, toNumber(pkg[key])])))}
+            onClick={() => runQuote(rows.map(toPackage))}
           >
             {quoting ? <CircularProgress size={16} color="inherit" /> : "Cotizar"}
           </Button>
+          {boxes > 1 && (
+            <Typography variant="caption" color="textSecondary">
+              {boxes} cajas en una sola guía
+            </Typography>
+          )}
           {stale && quoted && !quoting && (
             <Typography variant="caption" color="warning.main">
-              Cambiaste el paquete: cotiza de nuevo antes de generar.
+              Cambiaste los paquetes: cotiza de nuevo antes de generar.
             </Typography>
           )}
         </Box>
@@ -388,7 +449,7 @@ function GenerateLabelDialog({ order, dispatch, onClose, onGenerated }) {
           </RadioGroup>
         )}
         <Typography variant="caption" color="textSecondary" component="p" sx={{ mt: 1.5 }}>
-          Desde la bodega asignada, con el peso y las medidas de arriba (la guía se genera con el paquete cotizado).
+          Desde la bodega asignada, con los paquetes de arriba en una sola guía (se genera con los paquetes cotizados).
           Generar la guía cobra el envío a la cuenta de Envía.
         </Typography>
       </DialogContent>

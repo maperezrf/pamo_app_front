@@ -44,17 +44,18 @@ export const api = {
     request(`/api/orders/${shopifyOrderId}/dispatch/notify/`, { method: "POST", body: { dispatch_id: dispatchId } }),
   fetchDispatchLabel: (shopifyOrderId, dispatchId) =>
     request(`/api/orders/${shopifyOrderId}/dispatch/label/fetch/`, { method: "POST", body: { dispatch_id: dispatchId } }),
-  // `pkg`: paquete {weight, length, width, height} en kg y cm; la guía se
-  // genera con el mismo que se cotizó (el backend lo guarda en `label_package`).
-  quoteDispatchLabel: (shopifyOrderId, dispatchId, pkg) =>
+  // `packages`: cajas [{weight, length, width, height, quantity}] en kg y cm,
+  // todas en una guía; se genera con las mismas que se cotizaron (el backend
+  // las guarda en `label_package`).
+  quoteDispatchLabel: (shopifyOrderId, dispatchId, packages) =>
     request(`/api/orders/${shopifyOrderId}/dispatch/label/quote/`, {
       method: "POST",
-      body: { dispatch_id: dispatchId, package: pkg },
+      body: { dispatch_id: dispatchId, packages },
     }),
-  generateDispatchLabel: (shopifyOrderId, dispatchId, { carrier, service, pkg }) =>
+  generateDispatchLabel: (shopifyOrderId, dispatchId, { carrier, service, packages }) =>
     request(`/api/orders/${shopifyOrderId}/dispatch/label/`, {
       method: "POST",
-      body: { dispatch_id: dispatchId, carrier, service, package: pkg },
+      body: { dispatch_id: dispatchId, carrier, service, packages },
     }),
   // "Cargar guía": sube una guía hecha fuera del sistema (PDF, número y
   // transportadora). Responde {dispatch, dispatches} o {detail}.
@@ -66,8 +67,9 @@ export const api = {
     if (dispatchId) form.append("dispatch_id", dispatchId);
     return request(`/api/orders/${shopifyOrderId}/dispatch/label/upload/`, { method: "POST", body: form });
   },
-  // "Liberar guía": quita la guía generada en Envía o cargada a mano para generar o cargar otra
-  // (no la cancela en Envía). Responde {dispatch, dispatches} o {detail}.
+  // "Liberar guía": quita la guía generada en Envía o cargada a mano para
+  // generar o cargar otra (no la cancela en Envía). Responde {dispatch,
+  // dispatches} o {detail}.
   releaseDispatchLabel: (shopifyOrderId, dispatchId) =>
     request(`/api/orders/${shopifyOrderId}/dispatch/label/release/`, {
       method: "POST",
