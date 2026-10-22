@@ -22,6 +22,9 @@ export const api = {
   pingAdmin: () => request("/api/auth/ping-admin/"),
   listOrders: (params) => request("/api/orders/", { params }),
   listInvoices: (params) => request("/api/invoicing/", { params }),
+  // Cotizaciones (draft orders de Shopify, en vivo): {quotes: [...]}, las
+  // 250 más recientes o las que coinciden con `search`.
+  listQuotes: (params) => request("/api/quotes/", { params }),
   // Catálogo de productos (rol Admin). Las cargas reciben filas leídas del
   // Excel en el navegador; el backend no maneja archivos.
   listProducts: (params) => request("/api/products/", { params }),
@@ -96,6 +99,8 @@ export const api = {
   downloadChannelLabel: (shopifyOrderId, kind) =>
     downloadFile(`/api/orders/${shopifyOrderId}/channel-label/${kind}/`),
   // PDF de la guía generada en Envía (guardada en el despacho).
+  // PDF de una cotización (con sesión).
+  downloadQuotePdf: (draftOrderId) => downloadFile(`/api/quotes/${draftOrderId}/pdf/`),
   downloadDispatchLabel: (shopifyOrderId, dispatchId) =>
     downloadFile(`/api/orders/${shopifyOrderId}/dispatch/label/file/${dispatchId ? `?dispatch_id=${dispatchId}` : ""}`),
 };

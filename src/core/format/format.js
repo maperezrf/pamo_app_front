@@ -37,6 +37,10 @@ export function shopifyOrderUrl(shopifyOrderId) {
   return SHOPIFY_ADMIN_URL && shopifyOrderId ? `${SHOPIFY_ADMIN_URL}/orders/${shopifyOrderId}` : null;
 }
 
+export function shopifyDraftOrderUrl(draftOrderId) {
+  return SHOPIFY_ADMIN_URL && draftOrderId ? `${SHOPIFY_ADMIN_URL}/draft_orders/${draftOrderId}` : null;
+}
+
 // Las líneas locales no guardan el id del producto: se abre la búsqueda de
 // productos del admin por SKU.
 export function shopifyProductSearchUrl(sku) {

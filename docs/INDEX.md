@@ -32,6 +32,7 @@ aplica, se incorpora a la documentación versionada.
 | Shell compartido | `src/app/layouts/`, `src/components/navigation/` | Layout autenticado (`AppShell`: sidebar, topbar, footer) y de acceso (`AuthLayout`). | [`architecture/OVERVIEW.md`](architecture/OVERVIEW.md) |
 | Pedidos | `src/modules/orders/` | Listado de pedidos con filtros, paginación de servidor y detalle. | [`apps/orders.md`](apps/orders.md) |
 | Facturación | `src/modules/invoicing/` | Listado de facturas en Siigo con su estado, motivo del fallo, SKU y enlaces a Shopify y a Siigo. | [`apps/invoicing.md`](apps/invoicing.md) |
+| Cotizaciones | `src/modules/quotes/` | Draft orders de Shopify: listado, PDF y link público para el cliente. | [`apps/quotes.md`](apps/quotes.md) |
 | Productos | `src/modules/products/` | Catálogo: listado, carga de SKU por marketplace (Excel o una fila) y kits. | [`apps/products.md`](apps/products.md) |
 | Excel | `src/core/excel/` | Leer y descargar `.xlsx` en el navegador (SheetJS, cargado bajo demanda). | [`apps/products.md`](apps/products.md) |
 | Formato común | `src/core/format/` | Fechas, importes y enlaces al admin de Shopify, compartidos entre áreas. | [`architecture/OVERVIEW.md`](architecture/OVERVIEW.md) |
@@ -56,6 +57,7 @@ aplica, se incorpora a la documentación versionada.
 | [App de pedidos](apps/orders.md) | Listado, filtros y detalle de pedidos. |
 | [App de facturación](apps/invoicing.md) | Listado y detalle de facturas en Siigo. |
 | [App de productos](apps/products.md) | Catálogo, equivalencias de SKU y kits. |
+| [App de cotizaciones](apps/quotes.md) | Listado y PDF de las cotizaciones de Shopify. |
 
 ## Regla de mantenimiento
 

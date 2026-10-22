@@ -13,6 +13,10 @@ Recibe toda la colección en `data` y hace filtro global, orden y paginación
 local (10 por página). Usarlo cuando la colección completa ya está en la
 pantalla. Ejemplo: pedidos no creados en `OrdersPage`.
 
+`searchable={false}` oculta el buscador del modo cliente, para cuando la
+pantalla busca en el backend y la tabla solo muestra lo que llegó. Ejemplo:
+`QuotesPage`.
+
 ## Modo servidor (`pagination`)
 
 Se activa al pasar `pagination`. `data` es solo la página actual; la

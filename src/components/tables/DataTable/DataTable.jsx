@@ -30,6 +30,8 @@ import {
 // Modo servidor (`pagination` presente): `data` es solo la página actual; la
 // pantalla es dueña de la página y los filtros, y la tabla solo los muestra.
 // Con `renderExpanded`, cada fila es un acordeón: un clic la despliega.
+// `searchable={false}` oculta el buscador del modo cliente (la pantalla busca
+// en el backend).
 // Ver docs/patterns/DATA_TABLE.md.
 export default function DataTable({
   columns,
@@ -39,6 +41,7 @@ export default function DataTable({
   loading = false,
   renderExpanded,
   getRowId,
+  searchable = true,
 }) {
   const isServer = Boolean(pagination);
   const canExpand = Boolean(renderExpanded);
@@ -69,7 +72,7 @@ export default function DataTable({
 
   return (
     <Paper variant="outlined" sx={{ borderRadius: 1.5, overflow: "hidden" }}>
-      {!isServer && (
+      {!isServer && searchable && (
         <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
           <TextField
             size="small"

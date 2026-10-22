@@ -10,6 +10,9 @@ logout, menú y verificación administrativa. Pedidos: `api.listOrders(params)`
 → `GET /api/orders/` (ver [`../apps/orders.md`](../apps/orders.md)).
 Facturación: `api.listInvoices(params)` → `GET /api/invoicing/` (ver
 [`../apps/invoicing.md`](../apps/invoicing.md)).
+Cotizaciones: `api.listQuotes(params)` → `GET /api/quotes/` y
+`api.downloadQuotePdf(id)` → `GET /api/quotes/<id>/pdf/` (ver
+[`../apps/quotes.md`](../apps/quotes.md)).
 Productos: `api.listProducts`, `api.createSkuUpload`, `api.getSkuUpload`,
 `api.exportKits`, `api.importKits`, `api.deleteMarketplaceSku` y
 `api.deleteKit` → `/api/products/` (ver
