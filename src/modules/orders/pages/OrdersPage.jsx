@@ -318,7 +318,7 @@ export default function OrdersPage() {
 
       <OrderFilters filters={filters} onChange={updateQuery} onClear={clearFilters} />
 
-      <SodimacRpaPanel />
+      <SodimacRpaPanel onChanged={reload} />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>

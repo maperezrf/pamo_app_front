@@ -34,6 +34,7 @@ aplica, se incorpora a la documentación versionada.
 | Facturación | `src/modules/invoicing/` | Listado de facturas en Siigo con su estado, motivo del fallo, SKU y enlaces a Shopify y a Siigo. | [`apps/invoicing.md`](apps/invoicing.md) |
 | Cotizaciones | `src/modules/quotes/` | Draft orders de Shopify: listado, PDF y link público para el cliente. | [`apps/quotes.md`](apps/quotes.md) |
 | Productos | `src/modules/products/` | Catálogo: listado, carga de SKU por marketplace (Excel o una fila) y kits. | [`apps/products.md`](apps/products.md) |
+| Procesos | `src/modules/processes/` | Orquestador: historial de ejecuciones y CRUD de programaciones. | [`apps/processes.md`](apps/processes.md) |
 | Excel | `src/core/excel/` | Leer y descargar `.xlsx` en el navegador (SheetJS, cargado bajo demanda). | [`apps/products.md`](apps/products.md) |
 | Formato común | `src/core/format/` | Fechas, importes y enlaces al admin de Shopify, compartidos entre áreas. | [`architecture/OVERVIEW.md`](architecture/OVERVIEW.md) |
 | Tabla compartida | `src/components/tables/DataTable/` | Tabla en modo cliente o con paginación de servidor. | [`patterns/DATA_TABLE.md`](patterns/DATA_TABLE.md) |
@@ -58,6 +59,7 @@ aplica, se incorpora a la documentación versionada.
 | [App de facturación](apps/invoicing.md) | Listado y detalle de facturas en Siigo. |
 | [App de productos](apps/products.md) | Catálogo, equivalencias de SKU y kits. |
 | [App de cotizaciones](apps/quotes.md) | Listado y PDF de las cotizaciones de Shopify. |
+| [App de procesos](apps/processes.md) | Ejecuciones y programaciones del orquestador. |
 
 ## Regla de mantenimiento
 

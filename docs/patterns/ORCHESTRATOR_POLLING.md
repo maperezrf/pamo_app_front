@@ -58,8 +58,11 @@ está `EJECUTANDO`; usar `error_message` cuando el estado sea `ERROR`.
 
 `GET /api/orchestrator/process-types/` lista los procesos activos, útil solo
 si una pantalla necesita construir un menú dinámico de procesos disponibles.
-`GET /api/orchestrator/executions/` acepta `?status=` y `?process_type=`
-(combinables) para historial o para el caso del `409` anterior.
+`GET /api/orchestrator/executions/` acepta `?status=`, `?process_type=` y
+`?schedule=` (combinables) para historial o para el caso del `409` anterior.
+Está paginado: la lista viene en `results` (con `count`). La pantalla
+`/processes` ([`apps/processes.md`](../apps/processes.md)) ya muestra el
+historial y las programaciones; no duplicarla en otra área.
 
 ## Autenticación y permisos
 

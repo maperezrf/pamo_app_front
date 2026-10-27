@@ -16,9 +16,9 @@ detalle interno (ver `AuthHero`, privado de `AuthLayout/`).
 | --- | --- | --- | --- |
 | `Sidebar` | navigation | `src/components/navigation/Sidebar/` | `AppShell` |
 | `Topbar` | navigation | `src/components/navigation/Topbar/` | `AppShell` |
-| `DataTable` | tables | `src/components/tables/DataTable/` | `OrdersPage`, `InvoicesPage`, `ProductsPage`, `QuotesPage` |
+| `DataTable` | tables | `src/components/tables/DataTable/` | `OrdersPage`, `InvoicesPage`, `ProductsPage`, `QuotesPage`, `ExecutionsTab`, `SchedulesTab` |
 | `BrandMark` | brand | `src/components/brand/BrandMark/` | `Sidebar`, `AuthLayout` |
-| `StatusChip` | data-display | `src/components/data-display/StatusChip/` | `OrdersPage`, `InvoicesPage`, `ProductsPage`, `SkuUploadDialog` |
+| `StatusChip` | data-display | `src/components/data-display/StatusChip/` | `OrdersPage`, `InvoicesPage`, `ProductsPage`, `SkuUploadDialog`, `ExecutionsTab` |
 | `MarketplaceLabel` | data-display | `src/components/data-display/MarketplaceLabel/` | `OrdersPage`, `OrderFilters`, `InvoicesPage`, `InvoiceFilters`, `ProductExpandedDetail`, `SkuUploadDialog` |
 
 ## `Sidebar`

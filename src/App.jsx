@@ -10,6 +10,7 @@ import OrdersPage from "./modules/orders/pages/OrdersPage";
 import InvoicesPage from "./modules/invoicing/pages/InvoicesPage";
 import ProductsPage from "./modules/products/pages/ProductsPage";
 import QuotesPage from "./modules/quotes/pages/QuotesPage";
+import ProcessesPage from "./modules/processes/pages/ProcessesPage";
 
 // authed: null = verificando sesión, false = sin sesión, true = con sesión
 export default function App() {
@@ -94,6 +95,7 @@ export default function App() {
         <Route path="/invoicing" element={<InvoicesPage />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/quotes" element={<QuotesPage />} />
+        <Route path="/processes" element={<ProcessesPage />} />
       </Route>
     </Routes>
   );

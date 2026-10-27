@@ -22,7 +22,8 @@ src/
 │   │   ├── components/     Componentes propios del área.
 │   │   └── orderFormat.js  Etiquetas y formato del área.
 │   ├── invoicing/          Listado y detalle de facturas en Siigo.
-│   └── products/           Catálogo, carga de SKU y kits.
+│   ├── products/           Catálogo, carga de SKU y kits.
+│   └── processes/          Ejecuciones y programaciones del orquestador.
 ├── components/
 │   ├── brand/              BrandMark.
 │   ├── data-display/       StatusChip, MarketplaceLabel.

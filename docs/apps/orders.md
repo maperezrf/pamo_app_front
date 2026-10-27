@@ -84,6 +84,12 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
   el iframe no carga), "Continuar"
   (solo con validación pendiente), "Detener" (solo con corrida en curso, con
   confirmación) y "Actualizar". Se refresca cada 10 s mientras corre.
+  - "Generar guías disponibles" (desde 2026-10-26; con el RPA libre):
+    abre `SodimacBulkLabelsDialog` con la vista previa del backend en dos
+    tablas, "Órdenes disponibles para generar guía" (`ready`) y "Órdenes
+    con novedad" (`blocked`, con el motivo). "Enviar N al RPA" manda solo
+    las disponibles (el backend recalcula la lista al confirmar) y recarga
+    el listado (`onChanged`).
 - **Columna "Guía"** (`orderLabel`): la guía del despacho si ya la tiene
   (número); si no, en Sodimac, el estado de la guía del RPA
   (`channel_label`: sin guía, pedida, con guía, error, revisión manual, con

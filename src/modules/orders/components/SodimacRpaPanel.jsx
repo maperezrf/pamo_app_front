@@ -3,6 +3,7 @@ import { Alert, Box, Button, Link, Typography } from "@mui/material";
 import StatusChip from "../../../components/data-display/StatusChip";
 import { api } from "../../../core/api/api";
 import { formatDateTime } from "../orderFormat";
+import SodimacBulkLabelsDialog from "./SodimacBulkLabelsDialog";
 
 // Mientras el RPA corre, el estado se refresca solo.
 const POLL_MS = 10000;
@@ -23,13 +24,16 @@ const RPA_STATE = {
 const viewerSrc = (url, interactive) => (interactive ? url : `${url}&view_only=true`);
 
 // Recuadro "RPA de guías de Sodimac": en qué va, ver en vivo (visor noVNC
-// del RPA incrustado), continuar tras resolver el CAPTCHA y detener la corrida.
+// del RPA incrustado), continuar tras resolver el CAPTCHA, detener la corrida
+// y "Generar guías disponibles" (lote de las OC listas; `onChanged` recarga
+// el listado de pedidos).
 // Contrato: backend/docs/contracts/API.md ("sodimac/rpa/status").
-export default function SodimacRpaPanel() {
+export default function SodimacRpaPanel({ onChanged }) {
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState(null);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -95,6 +99,11 @@ export default function SodimacRpaPanel() {
           </Typography>
         )}
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, ml: { sm: "auto" } }}>
+          {status.reachable && !status.running && (
+            <Button size="small" variant="contained" disabled={!!busy} onClick={() => setBulkOpen(true)}>
+              Generar guías disponibles
+            </Button>
+          )}
           {status.viewer_url && (
             <Button size="small" variant={viewerOpen ? "contained" : "outlined"} onClick={() => setViewerOpen((open) => !open)}>
               {viewerOpen ? "Ocultar visor" : "Ver en vivo"}
@@ -157,6 +166,17 @@ export default function SodimacRpaPanel() {
             .
           </Typography>
         </Box>
+      )}
+      {bulkOpen && (
+        <SodimacBulkLabelsDialog
+          onClose={() => setBulkOpen(false)}
+          onSent={(count) => {
+            setBulkOpen(false);
+            setMessage({ severity: "success", text: `${count} OC enviadas al RPA.` });
+            load();
+            onChanged?.();
+          }}
+        />
       )}
       {message && (
         <Alert severity={message.severity} sx={{ mt: 1 }} onClose={() => setMessage(null)}>

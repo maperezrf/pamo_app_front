@@ -40,6 +40,18 @@ export const api = {
   // un kit borra también sus componentes y equivalencias.
   deleteMarketplaceSku: (id) => request(`/api/products/marketplace-skus/${id}/`, { method: "DELETE" }),
   deleteKit: (productId) => request(`/api/products/kits/${productId}/`, { method: "DELETE" }),
+  // Orquestador (pantalla de procesos). Ejecuciones: {count, results} paginado
+  // (`status`, `process_type`, `schedule`, `page`, `page_size`). Programaciones:
+  // CRUD; la API valida los campos según `schedule_kind`.
+  listProcessTypes: () => request("/api/orchestrator/process-types/"),
+  launchProcess: (code, params) =>
+    request(`/api/orchestrator/process-types/${code}/launch/`, { method: "POST", body: { params: params ?? {} } }),
+  listExecutions: (params) => request("/api/orchestrator/executions/", { params }),
+  cancelExecution: (id) => request(`/api/orchestrator/executions/${id}/cancel/`, { method: "POST" }),
+  listSchedules: () => request("/api/orchestrator/schedules/"),
+  createSchedule: (body) => request("/api/orchestrator/schedules/", { method: "POST", body }),
+  updateSchedule: (id, body) => request(`/api/orchestrator/schedules/${id}/`, { method: "PATCH", body }),
+  deleteSchedule: (id) => request(`/api/orchestrator/schedules/${id}/`, { method: "DELETE" }),
   // Despacho de UN pedido (botones del panel). `dispatchId`: el despacho de
   // la bodega (obligatorio si el pedido sale de varias). Responden
   // {dispatch, dispatches} o {detail}.
@@ -83,6 +95,10 @@ export const api = {
   sodimacRpaStatus: () => request("/api/orders/sodimac/rpa/status/"),
   continueSodimacRpa: () => request("/api/orders/sodimac/rpa/continue/", { method: "POST" }),
   killSodimacRpa: () => request("/api/orders/sodimac/rpa/kill/", { method: "POST" }),
+  // Botón "Generar guías disponibles": vista previa {ready, blocked} y
+  // envío al RPA de las `ready` (responde lo mismo más `sent`, o {detail}).
+  sodimacBulkLabelsPreview: () => request("/api/orders/sodimac/rpa/bulk-labels/"),
+  sendSodimacBulkLabels: () => request("/api/orders/sodimac/rpa/bulk-labels/", { method: "POST" }),
   // Botón "Generar guía (RPA)" de Sodimac. Responde {channel_label} o {detail}.
   requestChannelLabel: (shopifyOrderId) =>
     request(`/api/orders/${shopifyOrderId}/channel-label/request/`, { method: "POST" }),
