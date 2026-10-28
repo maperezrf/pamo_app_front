@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Alert, Box, Link, Tab, Tabs, Typography } from "@mui/material";
+import { Alert, Box, Button, Link, Tab, Tabs, Typography } from "@mui/material";
 import { api } from "../../../core/api/api";
 import DataTable from "../../../components/tables/DataTable";
 import StatusChip from "../../../components/data-display/StatusChip";
 import OrderFilters from "../components/OrderFilters";
 import OrderExpandedDetail from "../components/OrderExpandedDetail";
 import SodimacRpaPanel from "../components/SodimacRpaPanel";
+import BulkNotifyDialog from "../components/BulkNotifyDialog";
 import MarketplaceLabel from "../../../components/data-display/MarketplaceLabel";
 import {
   customerName,
@@ -287,6 +288,7 @@ export default function OrdersPage() {
     [result],
   );
   const notCreatedCount = result?.orders_not_created_count ?? 0;
+  const [bulkNotifyOpen, setBulkNotifyOpen] = useState(false);
 
   return (
     <Box>
@@ -301,7 +303,11 @@ export default function OrdersPage() {
               : "Aún no hay sincronización con Shopify"}
           </Typography>
         )}
+        <Button variant="contained" size="small" onClick={() => setBulkNotifyOpen(true)}>
+          Notificar bodegas
+        </Button>
       </Box>
+      {bulkNotifyOpen && <BulkNotifyDialog onClose={() => setBulkNotifyOpen(false)} onNotified={reload} />}
 
       <Tabs
         value={tab}

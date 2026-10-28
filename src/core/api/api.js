@@ -97,8 +97,19 @@ export const api = {
   killSodimacRpa: () => request("/api/orders/sodimac/rpa/kill/", { method: "POST" }),
   // Botón "Generar guías disponibles": vista previa {ready, blocked} y
   // envío al RPA de las `ready` (responde lo mismo más `sent`, o {detail}).
+  // Botón "Notificar bodegas": pedidos que esperan aviso agrupados por bodega
+  // {locations, unassigned}, y el aviso de una bodega en un solo mensaje
+  // ({location, notified, failed, waiting} o {detail}).
+  bulkNotifyPreview: () => request("/api/orders/dispatch/bulk-notify/"),
+  bulkNotifyLocation: (locationId) =>
+    request("/api/orders/dispatch/bulk-notify/", { method: "POST", body: { location_id: locationId } }),
   sodimacBulkLabelsPreview: () => request("/api/orders/sodimac/rpa/bulk-labels/"),
-  sendSodimacBulkLabels: () => request("/api/orders/sodimac/rpa/bulk-labels/", { method: "POST" }),
+  // `purchaseOrders`: las OC marcadas (el backend manda solo las que sigan disponibles).
+  sendSodimacBulkLabels: (purchaseOrders) =>
+    request("/api/orders/sodimac/rpa/bulk-labels/", { method: "POST", body: { purchase_orders: purchaseOrders } }),
+  // Botón "Reintentar" de un pedido no creado (solo Sodimac): tras corregir la
+  // equivalencia del SKU. Responde {created, order: {status, error, ...}} o {detail}.
+  retryNotCreatedOrder: (id) => request(`/api/orders/not-created/${id}/retry/`, { method: "POST" }),
   // Botón "Generar guía (RPA)" de Sodimac. Responde {channel_label} o {detail}.
   requestChannelLabel: (shopifyOrderId) =>
     request(`/api/orders/${shopifyOrderId}/channel-label/request/`, { method: "POST" }),

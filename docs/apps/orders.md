@@ -28,7 +28,13 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
 - **Pestaña "No creados"**: `orders_not_created`. Llega completa en cada
   respuesta (hasta 200), por eso usa `DataTable` en modo cliente. Si
   `orders_not_created_count` supera lo recibido, se avisa que se muestran
-  solo los más recientes.
+  solo los más recientes. Una OC de Sodimac en `error_creando_orden` o
+  `pending` trae, al desplegarla, el botón **"Reintentar"**
+  (`RetryOrder` en `OrderExpandedDetail.jsx`,
+  `POST /api/orders/not-created/<id>/retry/`, desde 2026-10-28): se usa tras
+  corregir la equivalencia del SKU en Productos. Si se crea, el listado se
+  recarga y la OC sale de la pestaña; si sigue fallando, muestra el motivo
+  (`order.error`) o el `detail` del backend (`409` en proceso, etc.).
 - **Errores**: `400` muestra el mensaje de validación del backend; `403`,
   un aviso de permisos; `404` de página inexistente vuelve a la página 1;
   un fallo de red muestra un aviso de conexión. Una respuesta vieja se
@@ -76,6 +82,14 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
   "Bodega", si son varias, un chip "N bodegas" con los nombres en el
   `title` (`shopifyWarehouses`); con una, la bodega de `fulfillment` como
   antes.
+- **"Notificar bodegas"** (botón junto al título, desde 2026-10-26;
+  `components/BulkNotifyDialog.jsx`): pedidos que esperan aviso agrupados
+  por bodega (`api.bulkNotifyPreview`), cada una con si exige guía, sus
+  canales y dos tablas, "Listos para avisar" (con la guía) y "Con
+  novedad" (con el motivo), más "Sin bodega". El botón de cada bodega
+  (`api.bulkNotifyLocation`, con confirmación) la avisa en un solo
+  mensaje; muestra avisados, con error y sin guía, recarga la vista y el
+  listado (`onNotified`).
 - **Recuadro "RPA de guías de Sodimac"** (`components/SodimacRpaPanel.jsx`,
   debajo de los filtros; oculto si el backend no tiene el RPA configurado):
   estado del RPA, "Ver en vivo" (muestra/oculta el visor noVNC `viewer_url`
@@ -87,9 +101,12 @@ con los mismos roles del endpoint (`Admin`, `Operaciones`).
   - "Generar guías disponibles" (desde 2026-10-26; con el RPA libre):
     abre `SodimacBulkLabelsDialog` con la vista previa del backend en dos
     tablas, "Órdenes disponibles para generar guía" (`ready`) y "Órdenes
-    con novedad" (`blocked`, con el motivo). "Enviar N al RPA" manda solo
-    las disponibles (el backend recalcula la lista al confirmar) y recarga
-    el listado (`onChanged`).
+    con novedad" (`blocked`, con el motivo). En las disponibles, la columna
+    "Novedad" muestra `note` (lo que dijo el RPA en un intento anterior que
+    falló). Las disponibles llevan casilla
+    (todas marcadas al abrir; "marcar todas" en el encabezado). "Enviar N al
+    RPA" manda las marcadas (el backend recalcula y descarta las que ya no
+    estén disponibles) y recarga el listado (`onChanged`).
 - **Columna "Guía"** (`orderLabel`): la guía del despacho si ya la tiene
   (número); si no, en Sodimac, el estado de la guía del RPA
   (`channel_label`: sin guía, pedida, con guía, error, revisión manual, con

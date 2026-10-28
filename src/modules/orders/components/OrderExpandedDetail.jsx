@@ -32,6 +32,9 @@ import {
   warehouse,
 } from "../orderFormat";
 
+// Estados de un pedido no creado que el backend deja reintentar.
+const RETRYABLE_STATUSES = ["error_creando_orden", "pending"];
+
 // Contenido desplegado de una fila de pedidos (acordeón de DataTable).
 // `order.kind`: "shopify" (orders) o "not_created" (orders_not_created).
 export default function OrderExpandedDetail({ order, onChanged }) {
@@ -47,6 +50,10 @@ export default function OrderExpandedDetail({ order, onChanged }) {
         <Alert severity="error" sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
           {order.error}
         </Alert>
+      )}
+
+      {!isShopify && order.marketplace === "sodimac" && RETRYABLE_STATUSES.includes(order.status) && (
+        <RetryOrder order={order} onChanged={onChanged} />
       )}
 
       <Box sx={{ display: "flex", flexWrap: "wrap", columnGap: 4, rowGap: 1 }}>
@@ -391,6 +398,48 @@ function DispatchSummary({ dispatch, shopifyOrderId }) {
             );
           })}
         </Box>
+      )}
+    </Box>
+  );
+}
+
+// Botón "Reintentar" de una OC de Sodimac no creada en Shopify
+// (`POST /api/orders/not-created/<id>/retry/`): se usa después de corregir
+// la equivalencia del SKU en Productos. Si se crea, el listado se recarga y
+// la OC sale de "No creados"; si sigue fallando, se muestra el motivo.
+function RetryOrder({ order, onChanged }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const retry = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const { ok, data } = await api.retryNotCreatedOrder(order.id);
+      if (ok && data.created) onChanged?.();
+      else if (ok) setError(`Sigue sin crearse: ${data.order?.error || "sin detalle"}`);
+      else setError(data?.detail || "No se pudo reintentar la OC.");
+    } catch {
+      setError("No se pudo conectar con el servidor.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Box onClick={(e) => e.stopPropagation()}>
+      <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
+        <Button variant="contained" size="small" onClick={retry} disabled={busy}>
+          {busy ? "Reintentando…" : "Reintentar"}
+        </Button>
+        <Typography variant="body2" color="textSecondary">
+          Primero corrige la equivalencia del SKU en Productos; luego crea la OC en Shopify sin esperar al sync.
+        </Typography>
+      </Box>
+      {error && (
+        <Alert severity="error" sx={{ mt: 1, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+          {error}
+        </Alert>
       )}
     </Box>
   );
